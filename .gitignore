@@ -1,0 +1,33 @@
+# --- Top-level project ignores (repo root = parent of app/) ---
+composer.phar
+composer-setup.php
+*.sqlite
+*.sqlite-journal
+*.log
+.DS_Store
+Thumbs.db
+
+# --- Laravel app ignores (also covered by app/.gitignore) ---
+/app/.env
+/app/.env.backup
+/app/.env.production
+/app/vendor
+/app/node_modules
+/app/public/build
+/app/public/hot
+/app/storage/*.key
+/app/storage/pail
+/app/storage/logs/*.log
+/app/storage/framework/cache/data/*
+/app/storage/framework/sessions/*
+/app/storage/framework/views/*
+/app/storage/framework/testing/*
+/app/bootstrap/cache/*.php
+
+# --- Editor/tooling ---
+/.idea
+/.vscode
+/.cursor
+/.zed
+/.codex
+/.nova
