@@ -9,9 +9,36 @@ use Illuminate\Http\Request;
 
 final class NasController extends Controller
 {
-    public function index(NasRepository $nas)
+    public function index(NasRepository $nas, RadiusClient $radius)
     {
-        $list = $nas->listByTenant(tenant_id());
+        try {
+            // Show ALL NAS devices from the external RADIUS server (single-tenant,
+            // so every device belongs to the platform). SRD §4.2 listNas.
+            $api = $radius->listNas();
+            $rows = $api['nas'] ?? [];
+            // Join friendly local labels (by radius_nas_id) when we have them.
+            $labels = collect($nas->listByTenant(tenant_id()))
+                ->keyBy(fn(Nas $n) => $n->radiusNasId);
+            $list = array_map(function (array $r) use ($labels) {
+                $label = $r['id'] !== null && isset($labels[$r['id']])
+                    ? $labels[$r['id']]->name : null;
+                return new Nas(
+                    id: null,
+                    tenantId: tenant_id(),
+                    nasIp: $r['nas_ip'],
+                    sharedSecret: '', // never expose the secret to the UI
+                    name: $label,
+                    nasIdentifier: $r['nas_identifier'] ?? null,
+                    type: $r['type'] ?? null,
+                    apiEnabled: !empty($r['api_enabled']),
+                    description: $r['description'] ?? null,
+                    radiusNasId: $r['id'] ?? null,
+                );
+            }, $rows);
+        } catch (\Throwable $e) {
+            // Resilience (SRD §4.1): fall back to local records if RADIUS is down.
+            $list = $nas->listByTenant(tenant_id());
+        }
         return view('nas.index', ['nas' => $list]);
     }
 
