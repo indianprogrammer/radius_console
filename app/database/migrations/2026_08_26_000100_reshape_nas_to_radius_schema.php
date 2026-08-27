@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -30,6 +31,13 @@ return new class extends Migration
             $t->integer('radius_nas_id')->nullable(); // id returned by RADIUS on create
             $t->timestamps();
         });
+
+        // The dropIfExists above stripped RLS applied in 000000; re-enable it.
+        // PostgreSQL only; skipped on SQLite. SRD §3.1.
+        if (config('database.default') === 'pgsql') {
+            DB::statement("ALTER TABLE nas ENABLE ROW LEVEL SECURITY");
+            DB::statement("CREATE POLICY tenant_isolation_nas ON nas USING (tenant_id = current_setting('app.current_tenant')::bigint)");
+        }
     }
 
     public function down(): void

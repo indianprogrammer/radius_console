@@ -26,8 +26,9 @@ final class ResolveTenant
         abort_if($tenant === null, 404, 'Unknown tenant for host: ' . $host);
 
         // PostgreSQL RLS context (no-op on SQLite during local boot).
+        // Use set_config() — SET does not accept a bind parameter for its value.
         if (config('database.default') === 'pgsql') {
-            \DB::statement("SET app.current_tenant = ?", [$tenant->id]);
+            \DB::statement('SELECT set_config(?, ?, false)', ['app.current_tenant', (string) $tenant->id]);
         }
 
         // Share for Blade theming (logo/theme/name).
