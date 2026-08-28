@@ -13,5 +13,7 @@ interface NasRepository
     public function save(Nas $nas): Nas;
     public function listByTenant(string $tenantId): array;
     public function find(int $id): ?Nas;
+    /** Resolve a local NAS record by its external RADIUS id. */
+    public function findByRadiusNasId(int $radiusNasId): ?Nas;
     public function delete(int $id): void;
 }

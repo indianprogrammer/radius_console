@@ -18,6 +18,9 @@ Route::prefix('nas')->name('nas.')->group(function () {
     Route::get('/', [NasController::class, 'index'])->name('index');
     Route::get('/create', [NasController::class, 'create'])->name('create');
     Route::post('/', [NasController::class, 'store'])->name('store');
+    Route::get('/{nas}/edit', [NasController::class, 'edit'])->name('edit');
+    Route::put('/{nas}', [NasController::class, 'update'])->name('update');
+    Route::delete('/{nas}', [NasController::class, 'destroy'])->name('destroy');
 });
 
 Route::prefix('plans')->name('plans.')->group(function () {

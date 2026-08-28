@@ -33,6 +33,15 @@ interface RadiusClient
     /** Register a NAS device. */
     public function createNas(array $payload): array;
 
+    /** Update an existing NAS device by its RADIUS id. */
+    public function updateNas(int $id, array $payload): array;
+
+    /** Delete a NAS device by its RADIUS id. */
+    public function deleteNas(int $id): array;
+
+    /** Fetch a single NAS device by its RADIUS id. */
+    public function getNas(int $id): ?array;
+
     public function listNas(): array;
 
     /** Active sessions. */

@@ -15,7 +15,11 @@
         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
       },
       body: JSON.stringify({ theme })
-    }).catch(() => {});
+    }).then(() => {
+      window.toast(theme === 'dark' ? 'Switched to dark theme.' : 'Switched to light theme.', 'info');
+    }).catch(() => {
+      window.toast('Theme changed locally; could not save preference.', 'error');
+    });
   };
 
   document.querySelectorAll('[data-theme-toggle]').forEach(btn => {

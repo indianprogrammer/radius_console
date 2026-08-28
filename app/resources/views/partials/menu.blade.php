@@ -21,7 +21,7 @@
     ],
     'Radius Control' => [
       ['label' => 'Plans', 'route' => 'plans.index', 'ready' => true],
-      ['label' => 'NAS / Devices', 'route' => 'nas.index', 'ready' => true],
+      ['label' => 'NAS', 'route' => 'nas.index', 'ready' => true],
     ],
   ];
   $active = request()->route()?->getName();

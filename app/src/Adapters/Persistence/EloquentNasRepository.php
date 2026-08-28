@@ -19,6 +19,10 @@ final class EloquentNasRepository implements NasRepository
             'nas_identifier' => $nas->nasIdentifier,
             'type' => $nas->type,
             'api_enabled' => $nas->apiEnabled,
+            'api_host' => $nas->apiHost,
+            'api_port' => $nas->apiPort,
+            'api_username' => $nas->apiUsername,
+            'api_password' => $nas->apiPassword,
             'description' => $nas->description,
             'radius_nas_id' => $nas->radiusNasId,
         ]);
@@ -42,6 +46,12 @@ final class EloquentNasRepository implements NasRepository
         return $m ? $this->toDomain($m) : null;
     }
 
+    public function findByRadiusNasId(int $radiusNasId): ?Nas
+    {
+        $m = NasModel::where('radius_nas_id', $radiusNasId)->first();
+        return $m ? $this->toDomain($m) : null;
+    }
+
     public function delete(int $id): void
     {
         NasModel::where('id', $id)->delete();
@@ -58,6 +68,10 @@ final class EloquentNasRepository implements NasRepository
             nasIdentifier: $m->nas_identifier,
             type: $m->type,
             apiEnabled: (bool) $m->api_enabled,
+            apiHost: $m->api_host,
+            apiPort: $m->api_port,
+            apiUsername: $m->api_username,
+            apiPassword: $m->api_password,
             description: $m->description,
             radiusNasId: $m->radius_nas_id,
         );

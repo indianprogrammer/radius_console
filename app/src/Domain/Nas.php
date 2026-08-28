@@ -17,6 +17,10 @@ final class Nas
         public ?string $nasIdentifier = null,
         public ?string $type = null,
         public bool $apiEnabled = false,
+        public ?string $apiHost = null,
+        public ?string $apiPort = null,
+        public ?string $apiUsername = null,
+        public ?string $apiPassword = null,
         public ?string $description = null,
         public ?int $radiusNasId = null,
     ) {}

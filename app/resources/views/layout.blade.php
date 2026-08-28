@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="{{ asset('css/themes/tokens-dark.css') }}">
   <link rel="stylesheet" href="{{ asset('css/app.css') }}">
   <script src="{{ asset('js/theme-toggle.js') }}" defer></script>
+  <script src="{{ asset('js/toast.js') }}" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -33,7 +34,6 @@
       </div>
     </aside>
     <main class="content">
-      @if (session('status'))<div class="alert success">{{ session('status') }}</div>@endif
       @yield('content')
     </main>
   </div>
@@ -49,5 +49,21 @@
       @yield('bottombar-right', 'Env: ' . (app()->environment()))
     </div>
   </footer>
+
+  <!-- Toast notifications (one per user action). -->
+  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+  <script>
+    // Surface any server-flashed status as a toast (replaces the old inline
+    // alert so every action gets a consistent notification).
+    @if (session('status'))
+      window.addEventListener('DOMContentLoaded', () => window.toast('{{ addslashes(session('status')) }}', 'success'));
+    @endif
+    // Surface any validation / server errors as an error toast too, so every
+    // failing operation also gets a notification (inline alert remains as the
+    // persistent reference).
+    @if ($errors->any())
+      window.addEventListener('DOMContentLoaded', () => window.toast('{{ addslashes($errors->first()) }}', 'error'));
+    @endif
+  </script>
 </body>
 </html>

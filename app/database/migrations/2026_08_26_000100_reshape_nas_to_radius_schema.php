@@ -27,6 +27,10 @@ return new class extends Migration
             $t->string('nas_identifier')->nullable();
             $t->string('type')->nullable();          // mikrotik | cisco | ...
             $t->boolean('api_enabled')->default(false);
+            $t->string('api_host')->nullable();
+            $t->string('api_port')->nullable();
+            $t->string('api_username')->nullable();
+            $t->string('api_password')->nullable();
             $t->text('description')->nullable();
             $t->integer('radius_nas_id')->nullable(); // id returned by RADIUS on create
             $t->timestamps();

@@ -108,6 +108,9 @@ final class HttpRadiusAdapter implements RadiusClient
     public function createPlan(array $payload): array { return $this->call('POST', '/plans', $payload); }
     public function listPlans(): array { return $this->call('GET', '/plans'); }
     public function createNas(array $payload): array { return $this->call('POST', '/nas', $payload); }
+    public function updateNas(int $id, array $payload): array { return $this->call('PUT', "/nas/$id", $payload); }
+    public function deleteNas(int $id): array { return $this->call('DELETE', "/nas/$id"); }
+    public function getNas(int $id): ?array { return $this->call('GET', "/nas/$id"); }
     public function listNas(): array { return $this->call('GET', '/nas'); }
     public function listSessions(): array { return $this->call('GET', '/sessions'); }
     public function getSession(string $sessionId): ?array { return $this->call('GET', "/sessions/$sessionId"); }
