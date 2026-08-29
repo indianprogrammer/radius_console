@@ -14,6 +14,4 @@ interface TaxRateRepository
 
     /** @return TaxRate[] */
     public function listByTenant(string $tenantId): array;
-
-    public function defaultFor(string $tenantId): ?TaxRate;
 }

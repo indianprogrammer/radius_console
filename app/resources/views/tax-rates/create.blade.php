@@ -21,10 +21,6 @@
         <option value="fixed" {{ old('type') === 'fixed' ? 'selected' : '' }}>Fixed amount</option>
       </select>
     </label>
-    <label class="checkbox">
-      <input type="checkbox" name="is_default" value="1" {{ old('is_default') ? 'checked' : '' }}>
-      Use as default tax for new plans
-    </label>
     <button class="btn" type="submit">Create Tax Rate</button>
   </form>
 @endsection

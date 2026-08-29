@@ -64,7 +64,6 @@ final class EloquentPlanRepository implements PlanRepository
                     name: $tr->name,
                     rate: (float) $tr->rate,
                     type: $tr->type,
-                    isDefault: (bool) $tr->is_default,
                 );
             }
         }

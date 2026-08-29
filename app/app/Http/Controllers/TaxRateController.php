@@ -31,7 +31,6 @@ final class TaxRateController extends Controller
             'name' => 'required|string|max:120',
             'rate' => 'required|numeric|min:0|max:100',
             'type' => 'required|string|in:percentage,fixed',
-            'is_default' => 'nullable|boolean',
         ]);
 
         $taxes->save(new TaxRate(
@@ -40,7 +39,6 @@ final class TaxRateController extends Controller
             name: $data['name'],
             rate: (float) $data['rate'],
             type: $data['type'],
-            isDefault: !empty($data['is_default']),
         ));
 
         return redirect()->route('tax-rates.index')->with('status', 'Tax rate created.');
@@ -66,7 +64,6 @@ final class TaxRateController extends Controller
             'name' => 'required|string|max:120',
             'rate' => 'required|numeric|min:0|max:100',
             'type' => 'required|string|in:percentage,fixed',
-            'is_default' => 'nullable|boolean',
         ]);
 
         $taxes->save(new TaxRate(
@@ -75,7 +72,6 @@ final class TaxRateController extends Controller
             name: $data['name'],
             rate: (float) $data['rate'],
             type: $data['type'],
-            isDefault: !empty($data['is_default']),
         ));
 
         return redirect()->route('tax-rates.index')->with('status', 'Tax rate updated.');

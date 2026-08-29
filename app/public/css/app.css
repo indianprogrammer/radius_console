@@ -161,7 +161,6 @@ select {
   background: var(--color-text-muted); flex: 0 0 auto;
 }
 .tax-pill .rate { color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
-.tax-pill .star { color: var(--color-warning, #f59e0b); }
 .tax-pill:hover { border-color: var(--color-primary); }
 .tax-pill:has(input:checked) {
   border-color: var(--color-primary); background: color-mix(in srgb, var(--color-primary) 16%, var(--color-surface));

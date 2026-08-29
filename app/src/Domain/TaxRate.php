@@ -17,7 +17,6 @@ final class TaxRate
         public string $name,
         public float $rate,                 // percentage, e.g. 18.0
         public string $type = 'percentage', // percentage|fixed
-        public bool $isDefault = false,
     ) {}
 
     /**

@@ -36,7 +36,6 @@
             <span class="dot"></span>
             <span class="name">{{ $tr->name }}</span>
             <span class="rate">({{ number_format($tr->rate, 2) }}{{ $tr->type === 'fixed' ? '' : '%' }})</span>
-            @if ($tr->isDefault)<span class="star">★</span>@endif
           </label>
         @endforeach
       </div>
