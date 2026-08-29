@@ -28,12 +28,19 @@
       $attachedIds = old('tax_rate_ids', collect($plan->taxRates ?? [])->map(fn($t) => $t->id)->all());
     @endphp
     <label>Taxes (apply multiple or none)
-      <select name="tax_rate_ids[]" multiple size="{{ max(3, count($taxes)) }}">
+      <div class="tax-picker">
         @foreach ($taxes as $tr)
-          <option value="{{ $tr->id }}" {{ in_array($tr->id, $attachedIds) ? 'selected' : '' }}>{{ $tr->name }} ({{ number_format($tr->rate, 2) }}{{ $tr->type === 'fixed' ? '' : '%' }}){{ $tr->isDefault ? ' ★' : '' }}</option>
+          @php $checked = in_array($tr->id, $attachedIds); @endphp
+          <label class="tax-pill">
+            <input type="checkbox" name="tax_rate_ids[]" value="{{ $tr->id }}" {{ $checked ? 'checked' : '' }}>
+            <span class="dot"></span>
+            <span class="name">{{ $tr->name }}</span>
+            <span class="rate">({{ number_format($tr->rate, 2) }}{{ $tr->type === 'fixed' ? '' : '%' }})</span>
+            @if ($tr->isDefault)<span class="star">★</span>@endif
+          </label>
         @endforeach
-      </select>
-      <span class="hint">Hold Ctrl/Cmd to select several. Leave empty for no tax.</span>
+      </div>
+      <span class="hint">Tick as many as apply. Leave all unticked for no tax.</span>
     </label>
     <button class="btn" type="submit">Save</button>
   </form>

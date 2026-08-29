@@ -12,12 +12,19 @@
     <label>Price <span class="req">*</span><input name="price" type="number" step="0.01" min="0" required placeholder="0.00"></label>
     <label>Cycle <span class="req">*</span><select name="cycle"><option value="monthly">monthly</option><option value="quarterly">quarterly</option><option value="yearly">yearly</option></select></label>
     <label>Taxes (apply multiple or none)
-      <select name="tax_rate_ids[]" multiple size="{{ max(3, count($taxes)) }}">
+      <div class="tax-picker">
         @foreach ($taxes as $tr)
-          <option value="{{ $tr->id }}" {{ in_array($tr->id, old('tax_rate_ids', [])) ? 'selected' : '' }}>{{ $tr->name }} ({{ number_format($tr->rate, 2) }}{{ $tr->type === 'fixed' ? '' : '%' }}){{ $tr->isDefault ? ' ★' : '' }}</option>
+          @php $checked = in_array($tr->id, old('tax_rate_ids', [])); @endphp
+          <label class="tax-pill">
+            <input type="checkbox" name="tax_rate_ids[]" value="{{ $tr->id }}" {{ $checked ? 'checked' : '' }}>
+            <span class="dot"></span>
+            <span class="name">{{ $tr->name }}</span>
+            <span class="rate">({{ number_format($tr->rate, 2) }}{{ $tr->type === 'fixed' ? '' : '%' }})</span>
+            @if ($tr->isDefault)<span class="star">★</span>@endif
+          </label>
         @endforeach
-      </select>
-      <span class="hint">Hold Ctrl/Cmd to select several. Leave empty for no tax.</span>
+      </div>
+      <span class="hint">Tick as many as apply. Leave all unticked for no tax.</span>
     </label>
     <label>Bandwidth Profile<select name="bandwidth_profile_id">
       <option value="">— none —</option>

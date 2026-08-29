@@ -137,6 +137,39 @@ select {
 }
 .alert.success { background: var(--color-success); color: #fff; padding: .5rem .8rem; border-radius: 6px; margin-bottom: 1rem; }
 
+/* Multi-tax picker — theme-matched replacement for the native <select multiple>.
+   Renders each tax as a toggleable pill (checkbox) inside a bordered surface. */
+.tax-picker {
+  display: flex; flex-wrap: wrap; gap: .5rem;
+  padding: .55rem; border: 1px solid var(--color-border);
+  border-radius: 8px; background: var(--color-surface);
+}
+.tax-picker:empty::after {
+  content: "No tax rates yet — create one under Tax Rates.";
+  color: var(--color-text-muted); font-size: .85rem; padding: .15rem .25rem;
+}
+.tax-pill {
+  position: relative; display: inline-flex; align-items: center; gap: .45rem;
+  padding: .4rem .7rem; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--color-border); background: var(--color-surface-2);
+  color: var(--color-text); font-size: .9rem; user-select: none;
+  transition: border-color .15s ease, background .15s ease, color .15s ease;
+}
+.tax-pill input { position: absolute; opacity: 0; width: 0; height: 0; margin: 0; }
+.tax-pill .dot {
+  width: .6rem; height: .6rem; border-radius: 50%;
+  background: var(--color-text-muted); flex: 0 0 auto;
+}
+.tax-pill .rate { color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
+.tax-pill .star { color: var(--color-warning, #f59e0b); }
+.tax-pill:hover { border-color: var(--color-primary); }
+.tax-pill:has(input:checked) {
+  border-color: var(--color-primary); background: color-mix(in srgb, var(--color-primary) 16%, var(--color-surface));
+  color: var(--color-text);
+}
+.tax-pill:has(input:checked) .dot { background: var(--color-primary); }
+.tax-pill:has(input:focus-visible) { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+
 /* Toast notifications (one per user action). Stack top-right, theme-aware. */
 .toast-container {
   position: fixed; top: 1rem; right: 1rem; z-index: 1000;
