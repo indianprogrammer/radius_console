@@ -1,16 +1,1 @@
-/* Dark Ops — dark theme (SRD §3.2) */
-[data-theme="dark"] {
-  --color-bg: #0B1120;
-  --color-surface: #111827;
-  --color-surface-2: #1F2937;
-  --color-border: #1E293B;
-  --color-text: #E5E7EB;
-  --color-text-muted: #94A3B8;
-  --color-primary: #22D3EE;
-  --color-primary-hover: #06B6D4;
-  --color-danger: #DC2626;
-  --color-success: #34D399;
-  --color-warning: #FBBF24;
-  --radius: 10px;
-  --shadow: 0 1px 3px rgba(0,0,0,.5);
-}
+[data-theme=dark]{--color-bg: #0B1120;--color-surface: #111827;--color-surface-2: #1F2937;--color-border: #1E293B;--color-text: #E5E7EB;--color-text-muted: #94A3B8;--color-primary: #22D3EE;--color-primary-hover: #06B6D4;--color-danger: #DC2626;--color-success: #34D399;--color-warning: #FBBF24;--radius: 10px;--shadow: 0 1px 3px rgba(0,0,0,.5)}
