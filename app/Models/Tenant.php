@@ -14,4 +14,5 @@ class Tenant extends Model
 
     public function subscribers() { return $this->hasMany(Subscriber::class); }
     public function plans() { return $this->hasMany(Plan::class); }
+    public function bandwidthProfiles() { return $this->hasMany(BandwidthProfile::class, 'company_id'); }
 }

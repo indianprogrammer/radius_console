@@ -3,7 +3,7 @@
   <h1>NAS</h1>
   <a class="btn" href="{{ route('nas.create') }}">+ Register Device</a>
   <table>
-    <thead><tr><th>Label</th><th>NAS IP</th><th>Type</th><th>API</th><th>RADIUS ID</th><th>Actions</th></tr></thead>
+    <thead><tr><th>Name</th><th>NAS IP</th><th>Type</th><th>API</th><th>Actions</th></tr></thead>
     <tbody>
       @forelse ($nas as $n)
         <tr>
@@ -18,7 +18,6 @@
               <span class="badge">off</span>
             @endif
           </td>
-          <td>{{ $n->radiusNasId ?? '—' }}</td>
           <td>
             @if ($n->radiusNasId)
               <button class="btn" onclick="window.location.href='{{ route('nas.edit', $n->radiusNasId) }}'">
@@ -33,7 +32,7 @@
           </td>
         </tr>
       @empty
-        <tr><td colspan="6">No devices found.</td></tr>
+        <tr><td colspan="5">No devices found.</td></tr>
       @endforelse
     </tbody>
   </table>

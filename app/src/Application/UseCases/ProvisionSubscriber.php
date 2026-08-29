@@ -3,6 +3,7 @@
 namespace App\Src\Application\UseCases;
 
 use App\Src\Domain\Subscriber;
+use App\Src\Ports\BandwidthProfileRepository;
 use App\Src\Ports\RadiusClient;
 use App\Src\Ports\SubscriberRepository;
 use App\Src\Ports\PlanRepository;
@@ -17,18 +18,32 @@ final class ProvisionSubscriber
     public function __construct(
         private SubscriberRepository $subscribers,
         private PlanRepository $plans,
+        private BandwidthProfileRepository $profiles,
         private RadiusClient $radius,
     ) {}
 
     /**
-     * @param array $data keys: tenant_id, username, password, plan_id, mac?, static_ip?
+     * @param array $data keys: tenant_id, username, password, plan_id?, bandwidth_profile_id?, mac?, static_ip?
      */
     public function execute(array $data, string $tenantSlug): Subscriber
     {
-        $plan = $this->plans->find((int) $data['plan_id']);
-        if (!$plan) {
+        $planId = $data['plan_id'] ?? null;
+        $bandwidthProfileId = $data['bandwidth_profile_id'] ?? null;
+
+        $plan = $planId !== null ? $this->plans->find((int) $planId) : null;
+        if ($planId !== null && $plan === null) {
             throw new \InvalidArgumentException('Unknown plan_id');
         }
+        // A plan's billing link implies its bandwidth profile unless overridden.
+        if ($bandwidthProfileId === null && $plan !== null) {
+            $bandwidthProfileId = $plan->bandwidthProfileId;
+        }
+        $profile = $bandwidthProfileId !== null ? $this->profiles->find((int) $bandwidthProfileId) : null;
+        if ($bandwidthProfileId !== null && $profile === null) {
+            throw new \InvalidArgumentException('Unknown bandwidth_profile_id');
+        }
+        // The RADIUS "plan_id" is the bandwidth profile's RADIUS record.
+        $radiusProfileId = $profile?->radiusProfileId;
 
         $sub = new Subscriber(
             id: null,
@@ -37,7 +52,8 @@ final class ProvisionSubscriber
             passwordEnc: self::aesEncrypt($data['password'] ?? ''),
             mac: $data['mac'] ?? null,
             staticIp: $data['static_ip'] ?? null,
-            planId: $plan->id,
+            planId: $plan?->id,
+            bandwidthProfileId: $profile?->id,
             status: Subscriber::STATUS_ACTIVE,
         );
         // Compute tenant-namespaced RADIUS username up front (SRD §4.1.1)
@@ -46,10 +62,12 @@ final class ProvisionSubscriber
         $sub = $this->subscribers->save($sub);
 
         // Push to RADIUS with tenant-namespaced username (SRD §4.1.1).
+        // RADIUS only understands the bandwidth profile id (system of record
+        // for network behaviour); billing lives locally in `plans`.
         $created = $this->radius->createUser([
             'username' => $sub->radiusUsername,
             'password' => $data['password'],
-            'plan_id' => (int) $plan->radiusProfileId,
+            'plan_id' => $radiusProfileId !== null ? (int) $radiusProfileId : null,
             'status' => 'active',
             'mac_lock_enabled' => 1,
             'static_ip' => $data['static_ip'] ?? null,

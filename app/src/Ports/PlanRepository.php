@@ -10,6 +10,8 @@ interface PlanRepository
 
     public function find(int $id): ?Plan;
 
+    public function delete(int $id): void;
+
     /** @return Plan[] */
     public function listByTenant(string $tenantId): array;
 }

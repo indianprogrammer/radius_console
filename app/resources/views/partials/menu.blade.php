@@ -20,15 +20,30 @@
       ['label' => 'Audit Log', 'route' => '#', 'ready' => false],
     ],
     'Radius Control' => [
-      ['label' => 'Plans', 'route' => 'plans.index', 'ready' => true],
+      ['label' => 'Bandwidth Control', 'route' => 'bandwidth-profiles.index', 'ready' => true],
+      ['label' => 'Plan', 'route' => 'plans.index', 'ready' => true],
       ['label' => 'NAS', 'route' => 'nas.index', 'ready' => true],
     ],
   ];
   $active = request()->route()?->getName();
 
+  // A resource's all actions (index/create/edit/...) share the same first two
+  // route-name segments (e.g. "bandwidth-profiles"). Match on that prefix so
+  // create/edit pages still highlight their parent menu item. Defined as a
+  // real function so it is visible inside every @php block below.
+  if (!function_exists('menu_section_prefix')) {
+      function menu_section_prefix(?string $name): string {
+          // Route names are "resource.action" (e.g. bandwidth-profiles.create);
+          // take only the resource segment so every action highlights the same
+          // menu item. Non-resource names (e.g. "dashboard") pass through.
+          return $name ? explode('.', $name)[0] : '';
+      }
+  }
+  $activePrefix = menu_section_prefix($active);
+
   // Render a single menu row.
-  $renderItem = function (array $it) use ($active) {
-    $isActive = ($it['ready'] && $active && str_starts_with($active, $it['route']));
+  $renderItem = function (array $it) use ($activePrefix) {
+    $isActive = ($it['ready'] && $activePrefix && $activePrefix === menu_section_prefix($it['route']));
     $liClass = trim(($it['ready'] ? '' : 'muted') . ' ' . ($isActive ? 'active' : ''));
     if ($it['ready']) {
       $href = route($it['route']);
@@ -51,7 +66,7 @@
     @else
       @php
         // A group is "open" if any child route is the current active route.
-        $groupOpen = collect($items)->contains(fn($it) => $it['ready'] && $active && str_starts_with($active, $it['route']));
+        $groupOpen = collect($items)->contains(fn($it) => $it['ready'] && $activePrefix && $activePrefix === menu_section_prefix($it['route']));
       @endphp
       <li class="menu-group">
         <button type="button" class="group-toggle {{ $groupOpen ? 'open' : '' }}" data-group-toggle>

@@ -30,6 +30,15 @@ interface RadiusClient
 
     public function listPlans(): array;
 
+    /** Fetch a single plan/profile by its RADIUS id. */
+    public function getPlan(int $id): ?array;
+
+    /** Update an existing plan/profile by its RADIUS id. */
+    public function updatePlan(int $id, array $payload): array;
+
+    /** Delete a plan/profile by its RADIUS id. */
+    public function deletePlan(int $id): array;
+
     /** Register a NAS device. */
     public function createNas(array $payload): array;
 

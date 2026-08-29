@@ -31,3 +31,13 @@ Thumbs.db
 /.zed
 /.codex
 /.nova
+
+# --- Local workspace scratch / notes (not part of the project) ---
+/memories/
+/app/cript
+/app/storage/*.html
+/app/storage/*.css
+/app/storage/cssgrep.txt
+# Accidental dev command dumps (filenames contain shell/pasted text)
+/app/_dev_pw*
+/app/tPOP*

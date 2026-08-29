@@ -15,9 +15,12 @@ final class SubscriberController extends Controller
         return view('subscribers.index', ['subscribers' => $list]);
     }
 
-    public function create()
+    public function create(\App\Src\Ports\BandwidthProfileRepository $profiles, \App\Src\Ports\PlanRepository $plans)
     {
-        return view('subscribers.create');
+        return view('subscribers.create', [
+            'profiles' => $profiles->listByCompany((int) tenant_id()),
+            'plans' => $plans->listByTenant(tenant_id()),
+        ]);
     }
 
     public function store(Request $request, ProvisionSubscriber $provision, \App\Src\Ports\TenantRepository $tenants)
@@ -26,6 +29,7 @@ final class SubscriberController extends Controller
             'username' => 'required|string|max:64',
             'password' => 'required|string|min:8',
             'plan_id' => 'nullable|integer',
+            'bandwidth_profile_id' => 'nullable|integer',
             'mac' => 'nullable|string',
             'static_ip' => 'nullable|ip',
             'expiry' => 'nullable|date',
@@ -41,6 +45,7 @@ final class SubscriberController extends Controller
                     'username' => $data['username'],
                     'password' => $data['password'],
                     'plan_id' => $data['plan_id'] ?? null,
+                    'bandwidth_profile_id' => $data['bandwidth_profile_id'] ?? null,
                     'mac' => $data['mac'] ?? null,
                     'static_ip' => $data['static_ip'] ?? null,
                     'expiry' => $data['expiry'] ?? null,

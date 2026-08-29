@@ -2,6 +2,14 @@
 
 namespace App\Src\Domain;
 
+/**
+ * Pure domain entity for a billing PLAN.
+ *
+ * Holds ONLY financial / billing details (name, price, cycle). The network
+ * behaviour is delegated to a `BandwidthProfile` (synced to RADIUS) referenced
+ * by `bandwidthProfileId`. This keeps billing local-only while bandwidth is the
+ * RADIUS system of record. (Clean/Hexagonal: no DB / framework imports — §7.2.)
+ */
 final class Plan
 {
     public function __construct(
@@ -9,15 +17,7 @@ final class Plan
         public string $tenantId,
         public string $name,
         public float $price,
-        public string $cycle,           // monthly|quarterly|yearly
-        public int $downloadMbps,
-        public int $uploadMbps,
-        public ?float $dataLimitGb = null,
-        public int $durationDays = 30,
-        public ?float $fupThresholdGb = null,
-        public ?int $fupDownloadMbps = null,
-        public ?int $fupUploadMbps = null,
-        public ?int $simultaneousUse = 1,
-        public ?string $radiusProfileId = null,
+        public string $cycle,                // monthly|quarterly|yearly
+        public ?int $bandwidthProfileId = null,
     ) {}
 }

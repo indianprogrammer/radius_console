@@ -17,11 +17,22 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Idempotent: the 2026_08_26 reshape migration already created these
+        // columns when the nas table is recreated, so guard each one to avoid a
+        // "duplicate column" failure on a fresh database.
         Schema::table('nas', function (Blueprint $t) {
-            $t->string('api_host')->nullable()->after('api_enabled');
-            $t->string('api_port')->nullable()->after('api_host');
-            $t->string('api_username')->nullable()->after('api_port');
-            $t->string('api_password')->nullable()->after('api_username');
+            if (!Schema::hasColumn('nas', 'api_host')) {
+                $t->string('api_host')->nullable()->after('api_enabled');
+            }
+            if (!Schema::hasColumn('nas', 'api_port')) {
+                $t->string('api_port')->nullable()->after('api_host');
+            }
+            if (!Schema::hasColumn('nas', 'api_username')) {
+                $t->string('api_username')->nullable()->after('api_port');
+            }
+            if (!Schema::hasColumn('nas', 'api_password')) {
+                $t->string('api_password')->nullable()->after('api_username');
+            }
         });
     }
 

@@ -2,11 +2,13 @@
 
 namespace App\Providers;
 
+use App\Src\Adapters\Persistence\EloquentBandwidthProfileRepository;
 use App\Src\Adapters\Persistence\EloquentNasRepository;
 use App\Src\Adapters\Persistence\EloquentPlanRepository;
 use App\Src\Adapters\Persistence\EloquentSubscriberRepository;
 use App\Src\Adapters\Persistence\EloquentTenantRepository;
 use App\Src\Adapters\Radius\HttpRadiusAdapter;
+use App\Src\Ports\BandwidthProfileRepository;
 use App\Src\Ports\NasRepository;
 use App\Src\Ports\PlanRepository;
 use App\Src\Ports\RadiusClient;
@@ -27,6 +29,7 @@ final class RadiusServiceProvider extends ServiceProvider
         $this->app->bind(TenantRepository::class, EloquentTenantRepository::class);
         $this->app->bind(SubscriberRepository::class, EloquentSubscriberRepository::class);
         $this->app->bind(PlanRepository::class, EloquentPlanRepository::class);
+        $this->app->bind(BandwidthProfileRepository::class, EloquentBandwidthProfileRepository::class);
         $this->app->bind(NasRepository::class, EloquentNasRepository::class);
     }
 

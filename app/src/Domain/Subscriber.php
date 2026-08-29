@@ -27,6 +27,7 @@ final class Subscriber
         public ?string $mac = null,
         public ?string $staticIp = null,
         public ?int $planId = null,
+        public ?int $bandwidthProfileId = null,
         public string $status = self::STATUS_PROSPECT,
         public ?int $kycId = null,
         public ?string $expiry = null,
