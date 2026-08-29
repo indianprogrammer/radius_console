@@ -22,21 +22,24 @@ final class Plan
         public string $cycle,                // monthly|quarterly|yearly
         public ?int $bandwidthProfileId = null,
         public float $taxRate = 0.0,         // % applied when invoicing (e.g. 18.0)
-        public ?int $taxRateId = null,       // link to a managed TaxRate
+        /** @var TaxRate[] */
+        public array $taxRates = [],         // managed taxes attached to this plan (0..n)
     ) {}
 
     /**
-     * Tax amount for a given pre-tax subtotal (rounded to 2 decimals).
-     * Uses the linked TaxRate when present, else the plan's own taxRate.
+     * Total tax amount for a given pre-tax subtotal (rounded to 2 decimals).
+     * Sums every attached managed tax rate. Falls back to the plan's own
+     * flat `taxRate` % only when no managed taxes are attached.
      */
     public function taxFor(float $subtotal): float
     {
-        if ($this->taxRateId !== null && $this->linkedTaxRate !== null) {
-            return $this->linkedTaxRate->taxFor($subtotal);
+        if (!empty($this->taxRates)) {
+            $total = 0.0;
+            foreach ($this->taxRates as $tr) {
+                $total += $tr->taxFor($subtotal);
+            }
+            return round($total, 2);
         }
         return round($subtotal * ($this->taxRate / 100), 2);
     }
-
-    /** Resolved managed TaxRate (set by the repository when joined). */
-    public ?TaxRate $linkedTaxRate = null;
 }

@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * Tenant-scoped tax rate managed under Billing & Invoices. Reusable across
- * billing plans; `is_default` selects the rate applied to new plans.
+ * billing plans; `is_default` selects the rate applied to new plans. A tax may
+ * be attached to many plans via the `plan_tax_rate` pivot.
  */
 class TaxRate extends Model
 {
@@ -25,8 +27,9 @@ class TaxRate extends Model
         return $this->belongsTo(Tenant::class);
     }
 
-    public function plans()
+    public function plans(): BelongsToMany
     {
-        return $this->hasMany(Plan::class, 'tax_rate_id');
+        return $this->belongsToMany(Plan::class, 'plan_tax_rate')
+            ->withTimestamps();
     }
 }

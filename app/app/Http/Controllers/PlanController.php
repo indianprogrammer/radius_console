@@ -40,7 +40,8 @@ final class PlanController extends Controller
             'cycle' => 'required|string|in:monthly,quarterly,yearly',
             'bandwidth_profile_id' => 'nullable|integer|exists:bandwidth_profiles,id',
             'tax_rate' => 'nullable|numeric|min:0|max:100',
-            'tax_rate_id' => 'nullable|integer|exists:tax_rates,id',
+            'tax_rate_ids' => 'nullable|array',
+            'tax_rate_ids.*' => 'integer|exists:tax_rates,id',
         ]);
 
         if ($data['bandwidth_profile_id'] !== null) {
@@ -49,12 +50,7 @@ final class PlanController extends Controller
                 return back()->withInput()->withErrors(['bandwidth_profile_id' => 'Unknown bandwidth profile.']);
             }
         }
-        if ($data['tax_rate_id'] !== null) {
-            $tr = $taxes->find((int) $data['tax_rate_id']);
-            if ($tr === null || $tr->tenantId !== tenant_id()) {
-                return back()->withInput()->withErrors(['tax_rate_id' => 'Unknown tax rate.']);
-            }
-        }
+        $selectedTaxes = $this->resolveTaxes($taxes, $data['tax_rate_ids'] ?? []);
 
         $entity = new Plan(
             id: null,
@@ -64,7 +60,7 @@ final class PlanController extends Controller
             cycle: $data['cycle'],
             bandwidthProfileId: $data['bandwidth_profile_id'] ? (int) $data['bandwidth_profile_id'] : null,
             taxRate: (float) ($data['tax_rate'] ?? 0),
-            taxRateId: $data['tax_rate_id'] ? (int) $data['tax_rate_id'] : null,
+            taxRates: $selectedTaxes,
         );
         $plans->save($entity);
 
@@ -97,7 +93,8 @@ final class PlanController extends Controller
             'cycle' => 'required|string|in:monthly,quarterly,yearly',
             'bandwidth_profile_id' => 'nullable|integer|exists:bandwidth_profiles,id',
             'tax_rate' => 'nullable|numeric|min:0|max:100',
-            'tax_rate_id' => 'nullable|integer|exists:tax_rates,id',
+            'tax_rate_ids' => 'nullable|array',
+            'tax_rate_ids.*' => 'integer|exists:tax_rates,id',
         ]);
 
         if ($data['bandwidth_profile_id'] !== null) {
@@ -106,12 +103,7 @@ final class PlanController extends Controller
                 return back()->withInput()->withErrors(['bandwidth_profile_id' => 'Unknown bandwidth profile.']);
             }
         }
-        if ($data['tax_rate_id'] !== null) {
-            $tr = $taxes->find((int) $data['tax_rate_id']);
-            if ($tr === null || $tr->tenantId !== tenant_id()) {
-                return back()->withInput()->withErrors(['tax_rate_id' => 'Unknown tax rate.']);
-            }
-        }
+        $selectedTaxes = $this->resolveTaxes($taxes, $data['tax_rate_ids'] ?? []);
 
         $entity = new Plan(
             id: $plan->id,
@@ -121,7 +113,7 @@ final class PlanController extends Controller
             cycle: $data['cycle'],
             bandwidthProfileId: $data['bandwidth_profile_id'] ? (int) $data['bandwidth_profile_id'] : null,
             taxRate: (float) ($data['tax_rate'] ?? 0),
-            taxRateId: $data['tax_rate_id'] ? (int) $data['tax_rate_id'] : null,
+            taxRates: $selectedTaxes,
         );
         $plans->save($entity);
 
@@ -143,5 +135,21 @@ final class PlanController extends Controller
             return response()->json(['ok' => true, 'message' => 'Plan deleted.']);
         }
         return redirect()->route('plans.index')->with('status', 'Plan deleted.');
+    }
+
+    /**
+     * Resolve submitted tax ids into domain TaxRate entities, scoped to the
+     * current tenant. Returns [] when none selected (a plan may have no tax).
+     */
+    private function resolveTaxes(TaxRateRepository $taxes, array $ids): array
+    {
+        $out = [];
+        foreach (array_unique(array_map('intval', $ids)) as $id) {
+            $tr = $taxes->find($id);
+            if ($tr !== null && $tr->tenantId === tenant_id()) {
+                $out[] = $tr;
+            }
+        }
+        return $out;
     }
 }

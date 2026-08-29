@@ -4,26 +4,28 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * Billing-only plan. Network behaviour lives in the linked BandwidthProfile
- * (synced to RADIUS). Laravel relations kept for convenience.
+ * (synced to RADIUS). Laravel relations kept for convenience. A plan may have
+ * MANY managed tax rates (or none) via the `plan_tax_rate` pivot.
  */
 class Plan extends Model
 {
     protected $fillable = [
-        'tenant_id', 'name', 'price', 'cycle', 'bandwidth_profile_id', 'tax_rate', 'tax_rate_id',
+        'tenant_id', 'name', 'price', 'cycle', 'bandwidth_profile_id', 'tax_rate',
     ];
 
     protected $casts = [
         'price' => 'float',
         'tax_rate' => 'float',
-        'tax_rate_id' => 'integer',
     ];
 
-    public function taxRate(): BelongsTo
+    public function taxes(): BelongsToMany
     {
-        return $this->belongsTo(TaxRate::class);
+        return $this->belongsToMany(TaxRate::class, 'plan_tax_rate')
+            ->withTimestamps();
     }
 
     public function tenant(): BelongsTo

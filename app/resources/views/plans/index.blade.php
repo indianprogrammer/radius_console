@@ -10,9 +10,12 @@
           $profile = $p->bandwidthProfileId !== null
             ? collect($profiles)->firstWhere('id', $p->bandwidthProfileId)
             : null;
-          $taxLabel = $p->linkedTaxRate
-            ? $p->linkedTaxRate->name . ' (' . number_format($p->linkedTaxRate->rate, 2) . ($p->linkedTaxRate->type === 'fixed' ? '' : '%') . ')'
-            : (($p->taxRate ?? 0) > 0 ? number_format($p->taxRate, 2) . '%' : '—');
+          $taxes = $p->taxRates ?? [];
+          if (!empty($taxes)) {
+              $taxLabel = collect($taxes)->map(fn($t) => $t->name . ' (' . number_format($t->rate, 2) . ($t->type === 'fixed' ? '' : '%') . ')')->implode(', ');
+          } else {
+              $taxLabel = ($p->taxRate ?? 0) > 0 ? number_format($p->taxRate, 2) . '%' : '—';
+          }
         @endphp
         <tr>
           <td>{{ $p->name }}</td>

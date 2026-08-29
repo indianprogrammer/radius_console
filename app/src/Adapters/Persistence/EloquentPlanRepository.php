@@ -18,16 +18,24 @@ final class EloquentPlanRepository implements PlanRepository
             'cycle' => $plan->cycle,
             'bandwidth_profile_id' => $plan->bandwidthProfileId,
             'tax_rate' => $plan->taxRate,
-            'tax_rate_id' => $plan->taxRateId,
         ]);
         $m->save();
+
+        // Sync the many-to-many tax rates. Pivot rows are stamped with the
+        // tenant_id so RLS isolation applies on PostgreSQL.
+        $m->taxes()->sync(
+            collect($plan->taxRates)->mapWithKeys(fn($tr) => [
+                $tr->id => ['tenant_id' => $plan->tenantId],
+            ])->all()
+        );
+
         $plan->id = $m->id;
         return $plan;
     }
 
     public function find(int $id): ?Plan
     {
-        $m = PlanModel::with('taxRate')->find($id);
+        $m = PlanModel::with('taxes')->find($id);
         return $m ? $this->toDomain($m) : null;
     }
 
@@ -41,13 +49,26 @@ final class EloquentPlanRepository implements PlanRepository
 
     public function listByTenant(string $tenantId): array
     {
-        return PlanModel::with('taxRate')->where('tenant_id', $tenantId)
+        return PlanModel::with('taxes')->where('tenant_id', $tenantId)
             ->get()->map(fn($m) => $this->toDomain($m))->all();
     }
 
     private function toDomain(PlanModel $m): Plan
     {
-        $plan = new Plan(
+        $taxRates = [];
+        if ($m->relationLoaded('taxes')) {
+            foreach ($m->taxes as $tr) {
+                $taxRates[] = new \App\Src\Domain\TaxRate(
+                    id: $tr->id,
+                    tenantId: $tr->tenant_id,
+                    name: $tr->name,
+                    rate: (float) $tr->rate,
+                    type: $tr->type,
+                    isDefault: (bool) $tr->is_default,
+                );
+            }
+        }
+        return new Plan(
             id: $m->id,
             tenantId: $m->tenant_id,
             name: $m->name,
@@ -55,19 +76,7 @@ final class EloquentPlanRepository implements PlanRepository
             cycle: $m->cycle,
             bandwidthProfileId: $m->bandwidth_profile_id,
             taxRate: (float) ($m->tax_rate ?? 0),
-            taxRateId: $m->tax_rate_id,
+            taxRates: $taxRates,
         );
-        if ($m->relationLoaded('taxRate') && $m->taxRate) {
-            $tr = $m->taxRate;
-            $plan->linkedTaxRate = new \App\Src\Domain\TaxRate(
-                id: $tr->id,
-                tenantId: $tr->tenant_id,
-                name: $tr->name,
-                rate: (float) $tr->rate,
-                type: $tr->type,
-                isDefault: (bool) $tr->is_default,
-            );
-        }
-        return $plan;
     }
 }

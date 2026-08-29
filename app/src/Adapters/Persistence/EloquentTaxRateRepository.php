@@ -40,8 +40,9 @@ final class EloquentTaxRateRepository implements TaxRateRepository
 
     public function delete(int $id): void
     {
-        // Detach from plans (set to NULL) so deletion doesn't violate FK.
-        \App\Models\Plan::where('tax_rate_id', $id)->update(['tax_rate_id' => null]);
+        // Detach from any plans via the pivot (cascadeOnDelete also covers it),
+        // then remove the tax rate itself.
+        \App\Models\TaxRate::where('id', $id)->first()?->plans()->detach();
         TaxRateModel::where('id', $id)->delete();
     }
 
