@@ -4,13 +4,12 @@
   <p class="hint">Create reusable taxes (e.g. VAT, GST) and attach them to billing plans. Used when generating invoices.</p>
   <a class="btn" href="{{ route('tax-rates.create') }}">+ New Tax Rate</a>
   <table>
-    <thead><tr><th>Name</th><th>Rate</th><th>Type</th><th>Actions</th></tr></thead>
+    <thead><tr><th>Name</th><th>Rate</th><th>Actions</th></tr></thead>
     <tbody>
       @forelse ($taxes as $t)
         <tr>
           <td>{{ $t->name }}</td>
           <td>{{ number_format($t->rate, 2) }}{{ $t->type === 'fixed' ? ' (fixed)' : '%' }}</td>
-          <td>{{ ucfirst($t->type) }}</td>
           <td>
             <button class="btn" onclick="window.location.href='{{ route('tax-rates.edit', $t->id) }}'">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
@@ -23,7 +22,7 @@
           </td>
         </tr>
       @empty
-        <tr><td colspan="4">No tax rates yet. Click <em>+ New Tax Rate</em> to create one.</td></tr>
+        <tr><td colspan="3">No tax rates yet. Click <em>+ New Tax Rate</em> to create one.</td></tr>
       @endforelse
     </tbody>
   </table>
