@@ -170,6 +170,19 @@ select {
 .tax-pill:has(input:checked) .dot { background: var(--color-primary); }
 .tax-pill:has(input:focus-visible) { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 
+/* Live plan total (price + selected taxes), shown under the tax picker. */
+.plan-total {
+  display: flex; align-items: baseline; flex-wrap: wrap; gap: .5rem;
+  margin: .4rem 0 .2rem; padding: .55rem .7rem; border-radius: 8px;
+  background: var(--color-surface-2); border: 1px solid var(--color-border);
+}
+.plan-total .pt-label { color: var(--color-text-muted); font-size: .85rem; }
+.plan-total .pt-amount {
+  font-size: 1.15rem; font-weight: 700; color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+.plan-total .pt-breakdown { color: var(--color-text-muted); font-size: .8rem; }
+
 /* Toast notifications (one per user action). Stack top-right, theme-aware. */
 .toast-container {
   position: fixed; top: 1rem; right: 1rem; z-index: 1000;

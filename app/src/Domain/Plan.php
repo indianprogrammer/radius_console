@@ -37,4 +37,12 @@ final class Plan
         }
         return round($total, 2);
     }
+
+    /**
+     * Grand total (subtotal + tax) for a given pre-tax subtotal.
+     */
+    public function totalFor(float $subtotal): float
+    {
+        return round($subtotal + $this->taxFor($subtotal), 2);
+    }
 }

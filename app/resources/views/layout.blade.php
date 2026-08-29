@@ -65,5 +65,6 @@
       window.addEventListener('DOMContentLoaded', () => window.toast('{{ addslashes($errors->first()) }}', 'error'));
     @endif
   </script>
+  @stack('scripts')
 </body>
 </html>

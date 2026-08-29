@@ -26,6 +26,11 @@
       </div>
       <span class="hint">Tick as many as apply. Leave all unticked for no tax.</span>
     </label>
+    <div class="plan-total" aria-live="polite">
+      <span class="pt-label">Total (after tax)</span>
+      <span class="pt-amount" id="plan-total-amount">0.00</span>
+      <span class="pt-breakdown" id="plan-total-breakdown"></span>
+    </div>
     <label>Bandwidth Profile<select name="bandwidth_profile_id">
       <option value="">— none —</option>
       @foreach ($profiles as $bp)
@@ -35,3 +40,37 @@
     <button class="btn" type="submit">Create Plan</button>
   </form>
 @endsection
+
+@push('scripts')
+<script>
+  // Tax rate lookup (id -> {rate, type}) for live total computation.
+  const TAX_RATES = @json(collect($taxes)->mapWithKeys(fn($t) => [$t->id => ['rate' => (float) $t->rate, 'type' => $t->type]])->all());
+  (function () {
+    const price = document.querySelector('input[name="price"]');
+    const boxes = document.querySelectorAll('input[name="tax_rate_ids[]"]');
+    const amount = document.getElementById('plan-total-amount');
+    const breakdown = document.getElementById('plan-total-breakdown');
+    function recalc() {
+      const sub = parseFloat(price.value) || 0;
+      let tax = 0, parts = [];
+      boxes.forEach(b => {
+        if (!b.checked) return;
+        const t = TAX_RATES[b.value];
+        if (!t) return;
+        const amt = t.type === 'fixed' ? t.rate : sub * (t.rate / 100);
+        tax += amt;
+        parts.push(t.rate + (t.type === 'fixed' ? '' : '%'));
+      });
+      tax = Math.round(tax * 100) / 100;
+      const total = Math.round((sub + tax) * 100) / 100;
+      amount.textContent = total.toFixed(2);
+      breakdown.textContent = parts.length
+        ? '(' + sub.toFixed(2) + ' + ' + tax.toFixed(2) + ' tax [' + parts.join(' + ') + '])'
+        : '(no tax)';
+    }
+    price.addEventListener('input', recalc);
+    boxes.forEach(b => b.addEventListener('change', recalc));
+    recalc();
+  })();
+</script>
+@endpush
