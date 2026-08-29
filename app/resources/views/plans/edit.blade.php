@@ -24,6 +24,7 @@
         <option value="{{ $bp->id }}" {{ (old('bandwidth_profile_id', $plan->bandwidthProfileId) == $bp->id) ? 'selected' : '' }}>{{ $bp->name }} ({{ $bp->downloadMbps }}/{{ $bp->uploadMbps }} Mbps, {{ $bp->dataLimitGb ? number_format($bp->dataLimitGb, 0) . ' GB' : 'Unlimited' }})</option>
       @endforeach
     </select></label>
+    <label>Total Bandwidth (GB) <input name="data_limit_gb" type="number" min="0" step="1" value="{{ old('data_limit_gb', $plan->dataLimitGb ?? '') }}" placeholder="e.g. 500 (leave blank for unlimited)"></label>
     @php
       $attachedIds = old('tax_rate_ids', collect($plan->taxRates ?? [])->map(fn($t) => $t->id)->all());
     @endphp

@@ -39,6 +39,7 @@ final class PlanController extends Controller
             'price' => 'required|numeric|min:0',
             'cycle' => 'required|string|in:monthly,quarterly,yearly',
             'bandwidth_profile_id' => 'nullable|integer|exists:bandwidth_profiles,id',
+            'data_limit_gb' => 'nullable|integer|min:0',
             'tax_rate_ids' => 'nullable|array',
             'tax_rate_ids.*' => 'integer|exists:tax_rates,id',
         ]);
@@ -58,6 +59,7 @@ final class PlanController extends Controller
             price: (float) $data['price'],
             cycle: $data['cycle'],
             bandwidthProfileId: $data['bandwidth_profile_id'] ? (int) $data['bandwidth_profile_id'] : null,
+            dataLimitGb: $data['data_limit_gb'] !== null && $data['data_limit_gb'] !== '' ? (int) $data['data_limit_gb'] : null,
             taxRates: $selectedTaxes,
         );
         $plans->save($entity);
@@ -90,6 +92,7 @@ final class PlanController extends Controller
             'price' => 'required|numeric|min:0',
             'cycle' => 'required|string|in:monthly,quarterly,yearly',
             'bandwidth_profile_id' => 'nullable|integer|exists:bandwidth_profiles,id',
+            'data_limit_gb' => 'nullable|integer|min:0',
             'tax_rate_ids' => 'nullable|array',
             'tax_rate_ids.*' => 'integer|exists:tax_rates,id',
         ]);
@@ -109,6 +112,7 @@ final class PlanController extends Controller
             price: (float) $data['price'],
             cycle: $data['cycle'],
             bandwidthProfileId: $data['bandwidth_profile_id'] ? (int) $data['bandwidth_profile_id'] : null,
+            dataLimitGb: $data['data_limit_gb'] !== null && $data['data_limit_gb'] !== '' ? (int) $data['data_limit_gb'] : null,
             taxRates: $selectedTaxes,
         );
         $plans->save($entity);

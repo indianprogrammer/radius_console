@@ -21,6 +21,7 @@ final class Plan
         public float $price,
         public string $cycle,                // monthly|quarterly|yearly
         public ?int $bandwidthProfileId = null,
+        public ?int $dataLimitGb = null,     // plan-level data cap in GB (null = unlimited)
         /** @var TaxRate[] */
         public array $taxRates = [],         // managed taxes attached to this plan (0..n)
         public ?float $total = null,         // ceiling-rounded (price + taxes), persisted

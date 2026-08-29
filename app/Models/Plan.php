@@ -14,12 +14,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class Plan extends Model
 {
     protected $fillable = [
-        'tenant_id', 'name', 'price', 'total', 'cycle', 'bandwidth_profile_id',
+        'tenant_id', 'name', 'price', 'total', 'cycle', 'bandwidth_profile_id', 'data_limit_gb',
     ];
 
     protected $casts = [
         'price' => 'float',
         'total' => 'float',
+        'data_limit_gb' => 'integer',
     ];
 
     public function taxes(): BelongsToMany

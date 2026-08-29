@@ -36,6 +36,7 @@
         <option value="{{ $bp->id }}">{{ $bp->name }} ({{ $bp->downloadMbps }}/{{ $bp->uploadMbps }} Mbps, {{ $bp->dataLimitGb ? number_format($bp->dataLimitGb, 0) . ' GB' : 'Unlimited' }})</option>
       @endforeach
     </select></label>
+    <label>Total Bandwidth (GB) <input name="data_limit_gb" type="number" min="0" step="1" value="{{ old('data_limit_gb', '') }}" placeholder="e.g. 500 (leave blank for unlimited)"></label>
     <button class="btn" type="submit">Create Plan</button>
   </form>
 @endsection

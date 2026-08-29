@@ -25,7 +25,7 @@
           <td><strong>{{ number_format($total, 2) }}</strong></td>
           <td>{{ ucfirst($p->cycle) }}</td>
           <td>{{ $profile ? $profile->name : '—' }}</td>
-          <td>{{ $profile && $profile->dataLimitGb ? number_format($profile->dataLimitGb, 0) : 'Unlimited' }}</td>
+          <td>{{ $p->dataLimitGb ? number_format($p->dataLimitGb, 0) . ' GB' : 'Unlimited' }}</td>
           <td>
             @if ($p->id)
               <button class="btn" onclick="window.location.href='{{ route('plans.edit', $p->id) }}'">

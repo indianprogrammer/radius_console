@@ -18,6 +18,7 @@ final class EloquentPlanRepository implements PlanRepository
             'total' => $plan->totalRounded($plan->price),
             'cycle' => $plan->cycle,
             'bandwidth_profile_id' => $plan->bandwidthProfileId,
+            'data_limit_gb' => $plan->dataLimitGb,
         ]);
         $m->save();
 
@@ -74,6 +75,7 @@ final class EloquentPlanRepository implements PlanRepository
             price: (float) $m->price,
             cycle: $m->cycle,
             bandwidthProfileId: $m->bandwidth_profile_id,
+            dataLimitGb: $m->data_limit_gb,
             taxRates: $taxRates,
             total: isset($m->total) ? (float) $m->total : null,
         );
