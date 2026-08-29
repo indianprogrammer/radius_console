@@ -23,6 +23,7 @@ final class Plan
         public ?int $bandwidthProfileId = null,
         /** @var TaxRate[] */
         public array $taxRates = [],         // managed taxes attached to this plan (0..n)
+        public ?float $total = null,         // ceiling-rounded (price + taxes), persisted
     ) {}
 
     /**
@@ -44,5 +45,14 @@ final class Plan
     public function totalFor(float $subtotal): float
     {
         return round($subtotal + $this->taxFor($subtotal), 2);
+    }
+
+    /**
+     * Rounded (ceiling) total stored in the DB so the plan's charged amount is
+     * a whole figure and never undercharges.
+     */
+    public function totalRounded(float $subtotal): float
+    {
+        return ceil($subtotal + $this->taxFor($subtotal));
     }
 }

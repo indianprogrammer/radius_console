@@ -16,7 +16,7 @@
           } else {
               $taxLabel = '—';
           }
-          $total = $p->totalFor((float) $p->price);
+          $total = $p->total !== null ? (float) $p->total : $p->totalRounded((float) $p->price);
         @endphp
         <tr>
           <td>{{ $p->name }}</td>

@@ -13,7 +13,7 @@ class Invoice extends Model
 {
     protected $fillable = [
         'tenant_id', 'subscriber_id', 'number', 'amount', 'status', 'due_date',
-        'tax_rate', 'subtotal', 'tax_amount',
+        'tax_rate', 'subtotal', 'tax_amount', 'total',
     ];
 
     protected $casts = [
@@ -21,6 +21,7 @@ class Invoice extends Model
         'subtotal' => 'float',
         'tax_amount' => 'float',
         'tax_rate' => 'float',
+        'total' => 'float',
         'due_date' => 'datetime',
     ];
 
@@ -28,18 +29,20 @@ class Invoice extends Model
     public function subscriber() { return $this->belongsTo(Subscriber::class); }
 
     /**
-     * Compute invoice totals from a pre-tax subtotal and a tax rate (%).
-     * Rounds tax to 2 decimals and derives the grand total accordingly.
+     * Compute invoice totals from a pre-tax subtotal and a tax amount.
+     * `amount` is the precise total; `total` is the ceiling-rounded figure
+     * persisted for consistency (never undercharges).
      */
-    public static function computeTotals(float $subtotal, float $taxRate): array
+    public static function computeTotals(float $subtotal, float $taxAmount): array
     {
         $subtotal = round($subtotal, 2);
-        $taxAmount = round($subtotal * ($taxRate / 100), 2);
+        $taxAmount = round($taxAmount, 2);
+        $amount = round($subtotal + $taxAmount, 2);
         return [
             'subtotal' => $subtotal,
-            'tax_rate' => $taxRate,
             'tax_amount' => $taxAmount,
-            'amount' => round($subtotal + $taxAmount, 2),
+            'amount' => $amount,
+            'total' => ceil($amount),
         ];
     }
 }

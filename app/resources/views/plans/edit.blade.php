@@ -71,10 +71,10 @@
         parts.push(t.rate + (t.type === 'fixed' ? '' : '%'));
       });
       tax = Math.round(tax * 100) / 100;
-      const total = Math.round((sub + tax) * 100) / 100;
+      const total = Math.ceil(sub + tax);
       amount.textContent = total.toFixed(2);
       breakdown.textContent = parts.length
-        ? '(' + sub.toFixed(2) + ' + ' + tax.toFixed(2) + ' tax [' + parts.join(' + ') + '])'
+        ? '(' + sub.toFixed(2) + ' + ' + tax.toFixed(2) + ' tax [' + parts.join(' + ') + '] = ' + total.toFixed(2) + ')'
         : '(no tax)';
     }
     price.addEventListener('input', recalc);
