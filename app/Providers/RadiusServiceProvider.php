@@ -7,12 +7,14 @@ use App\Src\Adapters\Persistence\EloquentNasRepository;
 use App\Src\Adapters\Persistence\EloquentPlanRepository;
 use App\Src\Adapters\Persistence\EloquentSubscriberRepository;
 use App\Src\Adapters\Persistence\EloquentTenantRepository;
+use App\Src\Adapters\Persistence\EloquentTaxRateRepository;
 use App\Src\Adapters\Radius\HttpRadiusAdapter;
 use App\Src\Ports\BandwidthProfileRepository;
 use App\Src\Ports\NasRepository;
 use App\Src\Ports\PlanRepository;
 use App\Src\Ports\RadiusClient;
 use App\Src\Ports\SubscriberRepository;
+use App\Src\Ports\TaxRateRepository;
 use App\Src\Ports\TenantRepository;
 use Illuminate\Support\ServiceProvider;
 
@@ -31,6 +33,7 @@ final class RadiusServiceProvider extends ServiceProvider
         $this->app->bind(PlanRepository::class, EloquentPlanRepository::class);
         $this->app->bind(BandwidthProfileRepository::class, EloquentBandwidthProfileRepository::class);
         $this->app->bind(NasRepository::class, EloquentNasRepository::class);
+        $this->app->bind(TaxRateRepository::class, EloquentTaxRateRepository::class);
     }
 
     public function boot(): void

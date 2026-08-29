@@ -2,6 +2,8 @@
 
 namespace App\Src\Domain;
 
+use App\Src\Domain\TaxRate;
+
 /**
  * Pure domain entity for a billing PLAN.
  *
@@ -19,5 +21,22 @@ final class Plan
         public float $price,
         public string $cycle,                // monthly|quarterly|yearly
         public ?int $bandwidthProfileId = null,
+        public float $taxRate = 0.0,         // % applied when invoicing (e.g. 18.0)
+        public ?int $taxRateId = null,       // link to a managed TaxRate
     ) {}
+
+    /**
+     * Tax amount for a given pre-tax subtotal (rounded to 2 decimals).
+     * Uses the linked TaxRate when present, else the plan's own taxRate.
+     */
+    public function taxFor(float $subtotal): float
+    {
+        if ($this->taxRateId !== null && $this->linkedTaxRate !== null) {
+            return $this->linkedTaxRate->taxFor($subtotal);
+        }
+        return round($subtotal * ($this->taxRate / 100), 2);
+    }
+
+    /** Resolved managed TaxRate (set by the repository when joined). */
+    public ?TaxRate $linkedTaxRate = null;
 }

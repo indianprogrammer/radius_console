@@ -5,7 +5,6 @@
     '' => [ // ungrouped / top-level
       ['label' => 'Dashboard', 'route' => 'dashboard', 'ready' => true],
       ['label' => 'Subscribers', 'route' => 'subscribers.index', 'ready' => true],
-      ['label' => 'Billing & Invoices', 'route' => '#', 'ready' => false],
       ['label' => 'Wallets / Credit', 'route' => '#', 'ready' => false],
       ['label' => 'Live Sessions', 'route' => '#', 'ready' => false],
       ['label' => 'Disconnect / Bandwidth', 'route' => '#', 'ready' => false],
@@ -19,9 +18,12 @@
       ['label' => 'RBAC / Staff', 'route' => '#', 'ready' => false],
       ['label' => 'Audit Log', 'route' => '#', 'ready' => false],
     ],
+    'Billing & Invoices' => [
+      ['label' => 'Tax Rates', 'route' => 'tax-rates.index', 'ready' => true],
+      ['label' => 'Plans', 'route' => 'plans.index', 'ready' => true],
+    ],
     'Radius Control' => [
       ['label' => 'Bandwidth Control', 'route' => 'bandwidth-profiles.index', 'ready' => true],
-      ['label' => 'Plan', 'route' => 'plans.index', 'ready' => true],
       ['label' => 'NAS', 'route' => 'nas.index', 'ready' => true],
     ],
   ];

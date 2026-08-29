@@ -12,8 +12,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Plan extends Model
 {
     protected $fillable = [
-        'tenant_id', 'name', 'price', 'cycle', 'bandwidth_profile_id',
+        'tenant_id', 'name', 'price', 'cycle', 'bandwidth_profile_id', 'tax_rate', 'tax_rate_id',
     ];
+
+    protected $casts = [
+        'price' => 'float',
+        'tax_rate' => 'float',
+        'tax_rate_id' => 'integer',
+    ];
+
+    public function taxRate(): BelongsTo
+    {
+        return $this->belongsTo(TaxRate::class);
+    }
 
     public function tenant(): BelongsTo
     {

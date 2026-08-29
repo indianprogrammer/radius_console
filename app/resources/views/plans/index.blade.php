@@ -3,19 +3,23 @@
   <h1>Plans</h1>
   <a class="btn" href="{{ route('plans.create') }}">+ New Plan</a>
   <table>
-    <thead><tr><th>Name</th><th>Price</th><th>Cycle</th><th>Bandwidth Profile</th><th>Actions</th></tr></thead>
+    <thead><tr><th>Name</th><th>Price</th><th>Cycle</th><th>Bandwidth Profile</th><th>Tax</th><th>Actions</th></tr></thead>
     <tbody>
       @forelse ($plans as $p)
         @php
           $profile = $p->bandwidthProfileId !== null
             ? collect($profiles)->firstWhere('id', $p->bandwidthProfileId)
             : null;
+          $taxLabel = $p->linkedTaxRate
+            ? $p->linkedTaxRate->name . ' (' . number_format($p->linkedTaxRate->rate, 2) . ($p->linkedTaxRate->type === 'fixed' ? '' : '%') . ')'
+            : (($p->taxRate ?? 0) > 0 ? number_format($p->taxRate, 2) . '%' : '—');
         @endphp
         <tr>
           <td>{{ $p->name }}</td>
           <td>{{ number_format($p->price, 2) }}</td>
           <td>{{ ucfirst($p->cycle) }}</td>
           <td>{{ $profile ? $profile->name : '—' }}</td>
+          <td>{{ $taxLabel }}</td>
           <td>
             @if ($p->id)
               <button class="btn" onclick="window.location.href='{{ route('plans.edit', $p->id) }}'">
@@ -30,7 +34,7 @@
           </td>
         </tr>
       @empty
-        <tr><td colspan="5">No plans created yet.</td></tr>
+        <tr><td colspan="6">No plans created yet.</td></tr>
       @endforelse
     </tbody>
   </table>
