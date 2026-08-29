@@ -118,6 +118,12 @@ th, td { text-align: left; padding: .6rem .8rem; border-bottom: 1px solid var(--
 .btn.danger { background: var(--color-danger, #dc2626); }
 .btn.danger:hover { background: var(--color-danger, #dc2626); filter: brightness(1.1); }
 label { display: block; margin: .6rem 0; }
+
+/* Dark-theme action-button colors (override only in dark mode). */
+[data-theme="dark"] .btn.danger { background: #ec003f; }
+[data-theme="dark"] .btn.danger:hover { background: #ec003f; filter: brightness(1.1); }
+[data-theme="dark"] td .btn:not(.danger) { background: #162556; }
+[data-theme="dark"] td .btn:not(.danger):hover { background: #162556; filter: brightness(1.12); }
 input, select {
   width: 100%; padding: .5rem; border: 1px solid var(--color-border);
   border-radius: 6px; background: var(--color-surface); color: var(--color-text);
