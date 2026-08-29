@@ -33,7 +33,7 @@
     <label>Bandwidth Profile<select name="bandwidth_profile_id">
       <option value="">— none —</option>
       @foreach ($profiles as $bp)
-        <option value="{{ $bp->id }}">{{ $bp->name }} ({{ $bp->downloadMbps }}/{{ $bp->uploadMbps }} Mbps)</option>
+        <option value="{{ $bp->id }}">{{ $bp->name }} ({{ $bp->downloadMbps }}/{{ $bp->uploadMbps }} Mbps, {{ $bp->dataLimitGb ? number_format($bp->dataLimitGb, 0) . ' GB' : 'Unlimited' }})</option>
       @endforeach
     </select></label>
     <button class="btn" type="submit">Create Plan</button>

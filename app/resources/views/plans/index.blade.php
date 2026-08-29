@@ -3,7 +3,7 @@
   <h1>Plans</h1>
   <a class="btn" href="{{ route('plans.create') }}">+ New Plan</a>
   <table>
-    <thead><tr><th>Name</th><th>Price</th><th>Tax</th><th>Total</th><th>Cycle</th><th>Bandwidth Profile</th><th>Actions</th></tr></thead>
+    <thead><tr><th>Name</th><th>Price</th><th>Tax</th><th>Total</th><th>Cycle</th><th>Bandwidth Profile</th><th>Bandwidth (GB)</th><th>Actions</th></tr></thead>
     <tbody>
       @forelse ($plans as $p)
         @php
@@ -25,6 +25,7 @@
           <td><strong>{{ number_format($total, 2) }}</strong></td>
           <td>{{ ucfirst($p->cycle) }}</td>
           <td>{{ $profile ? $profile->name : '—' }}</td>
+          <td>{{ $profile && $profile->dataLimitGb ? number_format($profile->dataLimitGb, 0) : 'Unlimited' }}</td>
           <td>
             @if ($p->id)
               <button class="btn" onclick="window.location.href='{{ route('plans.edit', $p->id) }}'">
@@ -39,7 +40,7 @@
           </td>
         </tr>
       @empty
-        <tr><td colspan="7">No plans created yet.</td></tr>
+        <tr><td colspan="8">No plans created yet.</td></tr>
       @endforelse
     </tbody>
   </table>
