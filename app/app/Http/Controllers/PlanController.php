@@ -7,6 +7,7 @@ use App\Src\Ports\BandwidthProfileRepository;
 use App\Src\Ports\PlanRepository;
 use App\Src\Ports\TaxRateRepository;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
  * Billing Plans — financial details only (name, price, cycle). The network
@@ -15,10 +16,27 @@ use Illuminate\Http\Request;
  */
 final class PlanController extends Controller
 {
-    public function index(PlanRepository $plans, BandwidthProfileRepository $profiles, TaxRateRepository $taxes)
+    public function index(Request $request, PlanRepository $plans, BandwidthProfileRepository $profiles, TaxRateRepository $taxes)
     {
+        $perPage = max(1, min(100, (int) $request->query('per_page', 10)));
+        $page = max(1, (int) $request->query('page', 1));
+
+        $list = $plans->listByTenant(tenant_id());
+
+        // Slice + wrap in a LengthAwarePaginator so the view renders real
+        // pagination links via {{ $plans->links() }} (matches NAS list).
+        $items = collect($list);
+        $slice = $items->slice(($page - 1) * $perPage, $perPage)->values();
+        $paginator = new LengthAwarePaginator(
+            $slice,
+            $items->count(),
+            $perPage,
+            $page,
+            ['path' => request()->url(), 'query' => $request->query()]
+        );
+
         return view('plans.index', [
-            'plans' => $plans->listByTenant(tenant_id()),
+            'plans' => $paginator,
             'profiles' => $profiles->listByCompany((int) tenant_id()),
             'taxes' => $taxes->listByTenant(tenant_id()),
         ]);

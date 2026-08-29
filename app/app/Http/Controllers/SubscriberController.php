@@ -6,13 +6,28 @@ use App\Src\Application\UseCases\ProvisionSubscriber;
 use App\Src\Domain\Subscriber;
 use App\Src\Ports\SubscriberRepository;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 final class SubscriberController extends Controller
 {
-    public function index(SubscriberRepository $subscribers)
+    public function index(Request $request, SubscriberRepository $subscribers)
     {
+        $perPage = max(1, min(100, (int) $request->query('per_page', 10)));
+        $page = max(1, (int) $request->query('page', 1));
+
         $list = $subscribers->listByTenant(tenant_id());
-        return view('subscribers.index', ['subscribers' => $list]);
+
+        $items = collect($list);
+        $slice = $items->slice(($page - 1) * $perPage, $perPage)->values();
+        $paginator = new LengthAwarePaginator(
+            $slice,
+            $items->count(),
+            $perPage,
+            $page,
+            ['path' => request()->url(), 'query' => $request->query()]
+        );
+
+        return view('subscribers.index', ['subscribers' => $paginator]);
     }
 
     public function create(\App\Src\Ports\BandwidthProfileRepository $profiles, \App\Src\Ports\PlanRepository $plans)

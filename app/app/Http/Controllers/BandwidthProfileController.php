@@ -6,6 +6,7 @@ use App\Src\Domain\BandwidthProfile;
 use App\Src\Ports\BandwidthProfileRepository;
 use App\Src\Ports\RadiusClient;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
  * Bandwidth Control — RADIUS-synced, with a LOCAL mirror for display names and
@@ -25,8 +26,11 @@ final class BandwidthProfileController extends Controller
      * List LOCAL mirrors scoped by company — shows name + RADIUS plan id.
      * Bandwidth values are enriched from the live RADIUS plan when reachable.
      */
-    public function index(BandwidthProfileRepository $profiles, RadiusClient $radius)
+    public function index(Request $request, BandwidthProfileRepository $profiles, RadiusClient $radius)
     {
+        $perPage = max(1, min(100, (int) $request->query('per_page', 10)));
+        $page = max(1, (int) $request->query('page', 1));
+
         $list = $profiles->listByCompany((int) tenant_id());
 
         $radiusIndex = [];
@@ -61,7 +65,18 @@ final class BandwidthProfileController extends Controller
             ];
         }, $list);
 
-        return view('bandwidth-profiles.index', ['profiles' => $rows]);
+        $items = collect($rows);
+        $total = $items->count();
+        $slice = $items->slice(($page - 1) * $perPage, $perPage)->values();
+        $paginator = new LengthAwarePaginator(
+            $slice,
+            $total,
+            $perPage,
+            $page,
+            ['path' => request()->url(), 'query' => $request->query()]
+        );
+
+        return view('bandwidth-profiles.index', ['profiles' => $paginator]);
     }
 
     public function create()

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Src\Domain\TaxRate;
 use App\Src\Ports\TaxRateRepository;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
  * Tax Rates — managed under Billing & Invoices. Tenants create reusable taxes
@@ -13,10 +14,25 @@ use Illuminate\Http\Request;
  */
 final class TaxRateController extends Controller
 {
-    public function index(TaxRateRepository $taxes)
+    public function index(Request $request, TaxRateRepository $taxes)
     {
+        $perPage = max(1, min(100, (int) $request->query('per_page', 10)));
+        $page = max(1, (int) $request->query('page', 1));
+
+        $list = $taxes->listByTenant(tenant_id());
+
+        $items = collect($list);
+        $slice = $items->slice(($page - 1) * $perPage, $perPage)->values();
+        $paginator = new LengthAwarePaginator(
+            $slice,
+            $items->count(),
+            $perPage,
+            $page,
+            ['path' => request()->url(), 'query' => $request->query()]
+        );
+
         return view('tax-rates.index', [
-            'taxes' => $taxes->listByTenant(tenant_id()),
+            'taxes' => $paginator,
         ]);
     }
 
