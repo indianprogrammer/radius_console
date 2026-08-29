@@ -11,7 +11,6 @@
     <label>Name <span class="req">*</span><input name="name" required placeholder="Home 50 Mbps"></label>
     <label>Price <span class="req">*</span><input name="price" type="number" step="0.01" min="0" required placeholder="0.00"></label>
     <label>Cycle <span class="req">*</span><select name="cycle"><option value="monthly">monthly</option><option value="quarterly">quarterly</option><option value="yearly">yearly</option></select></label>
-    <label>Tax Rate (%)<input name="tax_rate" type="number" step="0.01" min="0" max="100" value="{{ old('tax_rate', '0') }}" placeholder="0.00"></label>
     <label>Taxes (apply multiple or none)
       <select name="tax_rate_ids[]" multiple size="{{ max(3, count($taxes)) }}">
         @foreach ($taxes as $tr)

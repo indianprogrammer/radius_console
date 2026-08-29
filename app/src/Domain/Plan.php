@@ -21,25 +21,20 @@ final class Plan
         public float $price,
         public string $cycle,                // monthly|quarterly|yearly
         public ?int $bandwidthProfileId = null,
-        public float $taxRate = 0.0,         // % applied when invoicing (e.g. 18.0)
         /** @var TaxRate[] */
         public array $taxRates = [],         // managed taxes attached to this plan (0..n)
     ) {}
 
     /**
      * Total tax amount for a given pre-tax subtotal (rounded to 2 decimals).
-     * Sums every attached managed tax rate. Falls back to the plan's own
-     * flat `taxRate` % only when no managed taxes are attached.
+     * Sums every attached managed tax rate. A plan with no taxes returns 0.
      */
     public function taxFor(float $subtotal): float
     {
-        if (!empty($this->taxRates)) {
-            $total = 0.0;
-            foreach ($this->taxRates as $tr) {
-                $total += $tr->taxFor($subtotal);
-            }
-            return round($total, 2);
+        $total = 0.0;
+        foreach ($this->taxRates as $tr) {
+            $total += $tr->taxFor($subtotal);
         }
-        return round($subtotal * ($this->taxRate / 100), 2);
+        return round($total, 2);
     }
 }

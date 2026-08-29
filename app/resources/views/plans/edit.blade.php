@@ -24,7 +24,6 @@
         <option value="{{ $bp->id }}" {{ (old('bandwidth_profile_id', $plan->bandwidthProfileId) == $bp->id) ? 'selected' : '' }}>{{ $bp->name }} ({{ $bp->downloadMbps }}/{{ $bp->uploadMbps }} Mbps)</option>
       @endforeach
     </select></label>
-    <label>Tax Rate (%)<input name="tax_rate" type="number" step="0.01" min="0" max="100" value="{{ old('tax_rate', number_format($plan->taxRate ?? 0, 2, '.', '')) }}" placeholder="0.00"></label>
     @php
       $attachedIds = old('tax_rate_ids', collect($plan->taxRates ?? [])->map(fn($t) => $t->id)->all());
     @endphp

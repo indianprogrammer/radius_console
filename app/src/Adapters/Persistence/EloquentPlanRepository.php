@@ -17,7 +17,6 @@ final class EloquentPlanRepository implements PlanRepository
             'price' => $plan->price,
             'cycle' => $plan->cycle,
             'bandwidth_profile_id' => $plan->bandwidthProfileId,
-            'tax_rate' => $plan->taxRate,
         ]);
         $m->save();
 
@@ -75,7 +74,6 @@ final class EloquentPlanRepository implements PlanRepository
             price: (float) $m->price,
             cycle: $m->cycle,
             bandwidthProfileId: $m->bandwidth_profile_id,
-            taxRate: (float) ($m->tax_rate ?? 0),
             taxRates: $taxRates,
         );
     }
