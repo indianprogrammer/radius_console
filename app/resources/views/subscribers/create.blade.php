@@ -555,12 +555,23 @@
     const PRODUCT_AUTOCOMPLETE_URL = "{{ route('products.autocomplete') }}";
 
     // Cache products so we can autofill the rest of the row on pick.
-    let productCache = [];
+    // Load all products immediately on page load.
+    let productCache = (async () => {
+      try {
+        const res = await fetch(PRODUCT_AUTOCOMPLETE_URL, {
+          headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        if (res.ok) return await res.json();
+      } catch (e) {}
+      return [];
+    })();
 
     async function biLoadProducts(q = '') {
+      // If query is empty, return the preloaded cache
+      if (!q) return await productCache;
       try {
         const url = new URL(PRODUCT_AUTOCOMPLETE_URL, window.location.origin);
-        if (q) url.searchParams.set('q', q);
+        url.searchParams.set('q', q);
         const res = await fetch(url.toString(), {
           headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
         });
