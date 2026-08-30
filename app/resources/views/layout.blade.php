@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="{{ asset('css/app.css') }}">
   <script src="{{ asset('js/theme-toggle.js') }}" defer></script>
   <script src="{{ asset('js/toast.js') }}" defer></script>
+  @stack('styles')
 </head>
 <body>
   <header class="topbar">

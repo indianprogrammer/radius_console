@@ -3,28 +3,11 @@
   @php
     $e   = $eloquent;
     $get = fn($k, $d = '') => old($k, $e->{$k} ?? $d);
-    $states = [
-      'Andaman and Nicobar Islands','Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chandigarh',
-      'Chhattisgarh','Dadra and Nagar Haveli','Daman and Diu','Delhi','Goa','Gujarat','Haryana',
-      'Himachal Pradesh','Jammu and Kashmir','Jharkhand','Karnataka','Kerala','Lakshadweep',
-      'Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha',
-      'Pondicherry','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura',
-      'Uttar Pradesh','Uttarakhand','West Bengal',
-    ];
     $services      = [1=>'Broadband',2=>'Cable',3=>'IPTV',4=>'Telephone',5=>'OTT'];
     $billingTypes  = [1=>'Prepaid',2=>'Postpaid',3=>'Demo',4=>'Free'];
     $userTypes     = [1=>'Individual',2=>'Business'];
     $ipModes       = [2=>'DHCP',1=>'Static Ip',3=>'Pool Name',4=>'Pool Name + Static Ip'];
-    $connTypes     = [1=>'Fiber Connection',2=>'Cat5 Connection',3=>'Wireless',4=>'GPON'];
-    $authProtocols = [1=>'Hotspot (IPOE)',2=>'PPPOE'];
-    $houseTypes    = ['Rented House with Family','Own House with Family','Rented House with Bachelor'];
-    $paymentTypes  = [
-      1=>'Cash Payment',2=>'Cheque Payment',3=>'Online Transfer',4=>'Payment Gateway',
-      5=>'EDC Machine',6=>'Wallet',7=>'Paytm',8=>'TDS Payment',10=>'PayU Payment',
-      11=>'Adjustment Discount',9=>'Other Payment',12=>'Package Adjustment',
-      13=>'Api Transaction',14=>'Google Pay',15=>'Phonepe',16=>'Other UPI',17=>'Other',
-    ];
-    $specialRows  = old('special',  $e->special_charges  ?? []);
+    $accessTypes   = ['pppoe'=>'PPPoE','ipoe'=>'IPoE'];
     $billingRows  = old('billing_items', $e->billing_items ?? []);
   @endphp
 
@@ -49,23 +32,40 @@
         <div class="form-grid">
           <div class="field col-3">
             <label for="first_name">First Name</label>
-            <input type="text" name="first_name" id="first_name" value="{{ $get('first_name') }}" class="gui-input">
+            <input type="text" name="first_name" id="first_name" value="{{ $get('first_name') }}" class="gui-input" placeholder=" ">
           </div>
           <div class="field col-3">
             <label for="last_name">Last Name</label>
-            <input type="text" name="last_name" id="last_name" value="{{ $get('last_name') }}" class="gui-input">
+            <input type="text" name="last_name" id="last_name" value="{{ $get('last_name') }}" class="gui-input" placeholder=" ">
           </div>
           <div class="field col-3">
             <label for="father_or_company">Father Name or Company Name</label>
-            <input type="text" name="father_or_company" id="father_or_company" value="{{ $get('father_or_company') }}" class="gui-input">
+            <input type="text" name="father_or_company" id="father_or_company" value="{{ $get('father_or_company') }}" class="gui-input" placeholder=" ">
+          </div>
+          <div class="field col-3">
+            <label for="access_type">Access Type</label>
+            <select name="access_type" id="access_type" class="gui-input">
+              @foreach ($accessTypes as $val => $label)
+                <option value="{{ $val }}" @selected($get('access_type','pppoe')===$val)>{{ $label }}</option>
+              @endforeach
+            </select>
+          </div>
+          <div class="field col-3 pppoe-field">
+            <label for="pppoe_username">PPPoE Username</label>
+            <input type="text" name="pppoe_username" id="pppoe_username" value="{{ $get('pppoe_username') }}" class="gui-input" autocomplete="off" placeholder=" ">
+          </div>
+          <div class="field col-3 pppoe-field">
+            <label for="pppoe_password">PPPoE Password</label>
+            <input type="password" name="pppoe_password" id="pppoe_password" value="" class="gui-input" autocomplete="new-password" placeholder=" ">
+            <p class="hint">Leave blank to keep the current password.</p>
           </div>
           <div class="field col-3">
             <label for="mobile">Register Mobile</label>
-            <input type="text" name="mobile" id="mobile" value="{{ $get('mobile') }}" class="gui-input">
+            <input type="text" name="mobile" id="mobile" value="{{ $get('mobile') }}" class="gui-input" placeholder=" ">
           </div>
           <div class="field col-3">
             <label for="email">Register Email</label>
-            <input type="email" name="email" id="email" value="{{ $get('email') }}" class="gui-input">
+            <input type="email" name="email" id="email" value="{{ $get('email') }}" class="gui-input" placeholder=" ">
           </div>
         </div>
       </div>
@@ -82,7 +82,7 @@
               <option value="">— none —</option>
               @foreach ($plans as $pl)
                 <option value="{{ $pl->id }}" @selected(old('plan_id', $subscriber->planId)==$pl->id)>
-                  {{ $pl->name }} — {{ number_format($pl->price, 2) }}/{{ $pl->cycle }}
+                  {{ $pl->name }} — {{ number_format($pl->price, 2) }}/{{ $pl->durationLabel() }}
                 </option>
               @endforeach
             </select>
@@ -98,19 +98,28 @@
           </div>
           <div class="field col-3">
             <label for="gstin">GSTIN</label>
-            <input type="text" name="gstin" id="gstin" value="{{ $get('gstin') }}" class="gui-input">
+            <input type="text" name="gstin" id="gstin" value="{{ $get('gstin') }}" class="gui-input" placeholder=" ">
           </div>
           <div class="field col-3">
             <label for="po_number">PO Number</label>
-            <input type="text" name="po_number" id="po_number" value="{{ $get('po_number') }}" class="gui-input">
+            <input type="text" name="po_number" id="po_number" value="{{ $get('po_number') }}" class="gui-input" placeholder=" ">
           </div>
           <div class="field col-3">
-            <label for="po_date">PO Date</label>
-            <input type="datetime-local" name="po_date" id="po_date" value="{{ $get('po_date') ? \Carbon\Carbon::parse($get('po_date'))->format('Y-m-d\TH:i') : '' }}" class="gui-input">
+            <label for="po_date_display">PO Date</label>
+            <input type="text" id="po_date_display" class="gui-input js-dmy"
+                   data-target="po_date" inputmode="numeric" maxlength="10"
+                   autocomplete="off" placeholder=" ">
+            <input type="hidden" name="po_date" id="po_date" value="{{ $get('po_date') ? \Carbon\Carbon::parse($get('po_date'))->format('Y-m-d\TH:i') : '' }}">
+            <p class="hint">dd/mm/yy</p>
           </div>
           <div class="field col-3">
-            <label for="expiry">Expiry Date</label>
-            <input type="datetime-local" name="expiry" id="expiry" value="{{ old('expiry', $subscriber->expiry ? \Carbon\Carbon::parse($subscriber->expiry)->format('Y-m-d\TH:i') : '') }}" class="gui-input">
+            <label for="expiry_display">Expiry Date</label>
+            <input type="text" id="expiry_display" class="gui-input js-dmy"
+                   data-target="expiry" data-with-time data-default-time="23:59"
+                   inputmode="numeric" maxlength="14"
+                   autocomplete="off" placeholder=" ">
+            <input type="hidden" name="expiry" id="expiry" value="{{ old('expiry', $subscriber->expiry ? \Carbon\Carbon::parse($subscriber->expiry)->format('Y-m-d\TH:i') : '') }}">
+            <p class="hint">dd/mm/yy hh:ii</p>
           </div>
           <div class="field col-3">
             <label for="status">Status</label>
@@ -157,13 +166,6 @@
     </div>
 
     {{-- ========================= NETWORK INFORMATION ========================= --}}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    {{-- ========================= NETWORK INFORMATION ========================= --}}
     <div class="panel">
       <div class="panel-body">
         <h4 class="section-title">Network Information</h4>
@@ -185,33 +187,11 @@
           </div>
           <div class="field col-3" id="pool-name-wrap" style="display:none;">
             <label for="pool_name">Pool Name</label>
-            <input type="text" name="pool_name" id="pool_name" value="{{ $get('pool_name') }}" class="gui-input">
+            <input type="text" name="pool_name" id="pool_name" value="{{ $get('pool_name') }}" class="gui-input" placeholder=" ">
           </div>
           <div class="field col-3">
             <label for="mac">MAC Address</label>
             <input type="text" name="mac" id="mac" value="{{ old('mac', $subscriber->mac) }}" class="gui-input">
-          </div>
-          <div class="field col-3">
-            <label for="connection_type">Connection Type</label>
-            <select name="connection_type" id="connection_type" class="gui-input">
-              <option value="">Select Connection Type</option>
-              @foreach ($connTypes as $val => $label)
-                <option value="{{ $val }}" @selected($get('connection_type')==$val)>{{ $label }}</option>
-              @endforeach
-            </select>
-          </div>
-          <div class="field col-3">
-            <label for="cable_length">Fiber or Cat5 Length</label>
-            <input type="number" min="0" name="cable_length" id="cable_length" value="{{ $get('cable_length') }}" class="gui-input" placeholder="Enter in meters">
-          </div>
-          <div class="field col-3">
-            <label for="auth_protocol">Authentication Protocol</label>
-            <select name="auth_protocol" id="auth_protocol" class="gui-input">
-              <option value="">Select Protocol Type</option>
-              @foreach ($authProtocols as $val => $label)
-                <option value="{{ $val }}" @selected($get('auth_protocol')==$val)>{{ $label }}</option>
-              @endforeach
-            </select>
           </div>
           <div class="field col-2">
             <label class="switch-label">Auto Renew</label>
@@ -248,147 +228,6 @@
               <span data-on="Yes" data-off="No"></span>
             </label>
           </div>
-          <div class="field col-3">
-            <label for="circuit_id">Circuit Id</label>
-            <input type="text" name="circuit_id" id="circuit_id" value="{{ $get('circuit_id') }}" class="gui-input">
-          </div>
-        </div>
-      </div>
-    </div>
-
-    {{-- ========================= LOCATION INFORMATION ========================= --}}
-    <div class="panel">
-      <div class="panel-body">
-        <h4 class="section-title">Location Information</h4>
-        <div class="form-grid">
-          <div class="field col-3">
-            <label for="country">Country</label>
-            <select name="country" id="country" class="gui-input">
-              <option value="">Select Country</option>
-              <option value="India" @selected($get('country','India')=='India')>India (+91)</option>
-            </select>
-          </div>
-          <div class="field col-3">
-            <label for="state">State</label>
-            <select name="state" id="state" class="gui-input">
-              <option value="">Select State</option>
-              @foreach ($states as $st)
-                <option value="{{ $st }}" @selected($get('state')==$st)>{{ $st }}</option>
-              @endforeach
-            </select>
-          </div>
-          <div class="field col-3">
-            <label for="city">City</label>
-            <input type="text" name="city" id="city" value="{{ $get('city') }}" class="gui-input">
-          </div>
-          <div class="field col-3">
-            <label for="zip">Zip</label>
-            <input type="text" name="zip" id="zip" value="{{ $get('zip') }}" class="gui-input">
-          </div>
-          <div class="field col-3">
-            <label for="billing_address">
-              Billing Address
-              <span class="inline-check">
-                <input type="checkbox" id="copy_to_install" onclick="copyTextAdr('billing_address','installation_address')">
-                Same as Installation
-              </span>
-            </label>
-            <textarea name="billing_address" id="billing_address" class="gui-input" rows="3">{{ $get('billing_address') }}</textarea>
-          </div>
-          <div class="field col-3">
-            <label for="installation_address">
-              Installation Address
-              <span class="inline-check">
-                <input type="checkbox" id="copy_to_billing" onclick="copyTextAdr('installation_address','billing_address')">
-                Same as Billing
-              </span>
-            </label>
-            <textarea name="installation_address" id="installation_address" class="gui-input" rows="3">{{ $get('installation_address') }}</textarea>
-          </div>
-          <div class="field col-3">
-            <label for="house_type">House Type</label>
-            <select name="house_type" id="house_type" class="gui-input">
-              <option value="">Select Connection Type</option>
-              @foreach ($houseTypes as $h)
-                <option value="{{ $h }}" @selected($get('house_type')==$h)>{{ $h }}</option>
-              @endforeach
-            </select>
-          </div>
-          <div class="field col-3">
-            <label for="latitude">Latitude</label>
-            <input type="text" name="latitude" id="latitude" value="{{ $get('latitude') }}" class="gui-input">
-          </div>
-          <div class="field col-3">
-            <label for="longitude">Longitude</label>
-            <input type="text" name="longitude" id="longitude" value="{{ $get('longitude') }}" class="gui-input">
-          </div>
-        </div>
-      </div>
-    </div>
-
-    {{-- ========================= SPECIAL DISCOUNT & ADDITIONAL CHARGES ========================= --}}
-    <div class="panel">
-      <div class="panel-body">
-        <h4 class="section-title">Special Discount &amp; Additional Charges</h4>
-        <button type="button" class="btn btn-primary btn-sm" id="add-special">+ Add Special</button>
-        <div class="table-wrap">
-          <table class="data-table" id="special-table">
-            <thead>
-              <tr><th>Reason</th><th>Description</th><th>Approved By</th><th>Amount</th><th>Type</th><th>#</th></tr>
-            </thead>
-            <tbody>
-              @forelse ($specialRows as $i => $row)
-                <tr>
-                  <td><input type="text" name="special[{{ $i+1 }}][reason]"      value="{{ $row['reason']      ?? '' }}" class="gui-input"></td>
-                  <td><input type="text" name="special[{{ $i+1 }}][desc]"        value="{{ $row['desc']        ?? '' }}" class="gui-input"></td>
-                  <td>
-                    <select name="special[{{ $i+1 }}][approved_by]" class="gui-input">
-                      <option value="">Select Approved By</option>
-                      <option value="336" @selected(($row['approved_by'] ?? '')=='336')>mayank</option>
-                    </select>
-                  </td>
-                  <td><input type="number" step="0.01" name="special[{{ $i+1 }}][amount]" value="{{ $row['amount'] ?? '' }}" class="gui-input" style="width:90px;"></td>
-                  <td>
-                    <select name="special[{{ $i+1 }}][type]" class="gui-input">
-                      <option value="1" @selected(($row['type'] ?? '1')=='1')>Special Discount</option>
-                      <option value="2" @selected(($row['type'] ?? '')=='2')>Additional Charges</option>
-                    </select>
-                  </td>
-                  <td><button type="button" class="btn btn-danger btn-sm remove-special">X</button></td>
-                </tr>
-              @endforelse
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    {{-- ========================= PAYMENTS ========================= --}}
-    <div class="panel">
-      <div class="panel-body">
-        <h4 class="section-title">Payments</h4>
-        <div class="form-grid">
-          <div class="field col-3">
-            <label for="advance_payment">Advance Payment</label>
-            <input type="number" step="0.01" name="advance_payment" id="advance_payment" value="{{ $get('advance_payment') }}" class="gui-input">
-          </div>
-          <div class="field col-3">
-            <label for="payment_ref_no">Ref No</label>
-            <input type="text" name="payment_ref_no" id="payment_ref_no" value="{{ $get('payment_ref_no') }}" class="gui-input">
-          </div>
-          <div class="field col-3">
-            <label for="payment_type">Payment Type</label>
-            <select name="payment_type" id="payment_type" class="gui-input">
-              <option value="">Select Payment Type</option>
-              @foreach ($paymentTypes as $val => $label)
-                <option value="{{ $val }}" @selected($get('payment_type')==$val)>{{ $label }}</option>
-              @endforeach
-            </select>
-          </div>
-          <div class="field col-3">
-            <label for="payment_comment">Comment</label>
-            <input type="text" name="payment_comment" id="payment_comment" value="{{ $get('payment_comment') }}" class="gui-input">
-          </div>
         </div>
       </div>
     </div>
@@ -399,12 +238,9 @@
     </div>
   </form>
 
+  @include('partials.dmy-date-script')
+
   <script>
-    function copyTextAdr(fromId, toId) {
-      const from = document.getElementById(fromId);
-      const to   = document.getElementById(toId);
-      if (from && to) to.value = from.value;
-    }
     function applyIpMode() {
       const mode = document.getElementById('ip_mode').value;
       const showStatic = mode === '1' || mode === '4';
@@ -415,32 +251,26 @@
     }
     document.getElementById('ip_mode').addEventListener('change', applyIpMode);
     applyIpMode();
+
+    // ── Access type (PPPoE / IPoE) ──────────────────────────────────────
+    // PPPoE credentials only apply to PPPoE sessions; hide + disable them
+    // for IPoE so they are never submitted.
+    function applyAccessType() {
+      const isPppoe = document.getElementById('access_type').value === 'pppoe';
+      document.querySelectorAll('.pppoe-field').forEach(wrap => {
+        wrap.style.display = isPppoe ? '' : 'none';
+        wrap.querySelectorAll('input').forEach(input => {
+          input.disabled = !isPppoe;
+        });
+      });
+    }
+    document.getElementById('access_type').addEventListener('change', applyAccessType);
+    applyAccessType();
+
     // GSTIN is always visible now (user_type field removed)
     function applyUserType() {
       // No-op: GSTIN always visible
     }
-    let specialCount = {{ count($specialRows) }};
-    const specialTbody = document.querySelector('#special-table tbody');
-    document.getElementById('add-special').addEventListener('click', () => {
-      if (specialCount >= 10) return;
-      specialCount++;
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td><input type="text" name="special[${specialCount}][reason]" class="gui-input"></td>
-        <td><input type="text" name="special[${specialCount}][desc]"  class="gui-input"></td>
-        <td><select name="special[${specialCount}][approved_by]" class="gui-input"><option value="">Select Approved By</option><option value="336">mayank</option></select></td>
-        <td><input type="number" step="0.01" name="special[${specialCount}][amount]" class="gui-input" style="width:90px;"></td>
-        <td><select name="special[${specialCount}][type]" class="gui-input"><option value="1">Special Discount</option><option value="2">Additional Charges</option></select></td>
-        <td><button type="button" class="btn btn-danger btn-sm remove-special">X</button></td>
-      `;
-      specialTbody.appendChild(row);
-    });
-    specialTbody.addEventListener('click', e => {
-      if (e.target.classList.contains('remove-special')) {
-        e.target.closest('tr').remove();
-        specialCount = Math.max(0, specialCount - 1);
-      }
-    });
 
     function selip() {
       const bid = document.getElementById('branch_id').value;
@@ -546,7 +376,7 @@
           </select>
         </td>
         <td><input type="number" step="0.01" min="0" name="billing_items[${i}][amount]" data-bi="amount" value="${data.amount ?? ''}" class="gui-input" style="width:100px;" placeholder="0.00"></td>
-        <td><input type="number" min="1" name="billing_items[${i}][qty]" data-bi="qty" value="${data.qty ?? 1}" class="gui-input" style="width:60px;"></td>
+        <td><input type="number" min="1" name="billing_items[${i}][qty]" data-bi="qty" value="${data.qty ?? 1}" class="gui-input" style="width:60px;" placeholder=" "></td>
         <td>
           <select name="billing_items[${i}][taxable]" data-bi="taxable" class="gui-input" style="width:80px;">
             <option value="1" ${data.taxable !== '0' ? 'selected' : ''}>Yes</option>
@@ -668,6 +498,63 @@
     }
     .gui-input::placeholder { color: var(--color-text-muted); opacity: .6; }
     textarea.gui-input { resize: vertical; min-height: 80px; }
+
+    /* ══ Outlined text fields with floating labels ═══════════════
+       The label rests inside the control and floats up onto the top
+       border once the field is focused or holds a value.            */
+    .field:has(.gui-input) {
+      position: relative;
+      margin-top: .35rem;
+    }
+    .field:has(.gui-input) > label:not(.switch-label) {
+      position: absolute;
+      top: 50%;
+      left: .55rem;
+      transform: translateY(-50%);
+      transform-origin: left center;
+      margin: 0;
+      padding: 0 .3rem;
+      max-width: calc(100% - 1.4rem);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 400;
+      font-size: .9rem;
+      line-height: 1;
+      color: var(--color-text-muted);
+      background: var(--color-surface);
+      pointer-events: none;
+      transition: top .15s ease, font-size .15s ease, font-weight .15s ease, color .15s ease;
+    }
+    .field:has(.gui-input):has(.hint) > label:not(.switch-label) { top: 1.15rem; }
+
+    .gui-input { background: var(--color-surface); }
+
+    .field:has(.gui-input):focus-within > label:not(.switch-label),
+    .field:has(.gui-input:not(:placeholder-shown)) > label:not(.switch-label),
+    .field:has(select) > label:not(.switch-label),
+    .field:has(textarea) > label:not(.switch-label),
+    .field:has(input[type="file"]) > label:not(.switch-label),
+    .field:has(input[type="date"]) > label:not(.switch-label),
+    .field:has(input[type="datetime-local"]) > label:not(.switch-label) {
+      top: 0;
+      font-size: .72rem;
+      font-weight: 600;
+      color: var(--color-text-muted);
+    }
+    .field:has(.gui-input):focus-within > label:not(.switch-label) {
+      color: var(--color-primary);
+    }
+    .field:has(.gui-input) .gui-input:focus {
+      border-width: 2px;
+      padding: calc(.55rem - 1px) calc(.65rem - 1px);
+      box-shadow: none;
+    }
+    .field:has(textarea) > label:not(.switch-label) { top: 0; }
+
+    @supports not selector(:has(*)) {
+      .field:focus-within > label { color: var(--color-primary); }
+    }
 
     /* ── Hints & inline checks ─────────────────────────────── */
     .hint { font-size: .73rem; color: var(--color-text-muted); margin-top: .2rem; }
