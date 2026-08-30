@@ -11,10 +11,13 @@
     @csrf @method('PUT')
     <label>Name <span class="req">*</span><input name="name" required value="{{ old('name', $plan->name ?? '') }}" placeholder="Home 50 Mbps"></label>
     <label>Price <span class="req">*</span><input name="price" type="number" step="0.01" min="0" required value="{{ old('price', number_format($plan->price ?? 0, 2, '.', '')) }}"></label>
-    <label>Cycle <span class="req">*</span>
-      <select name="cycle">
-        @foreach (['monthly','quarterly','yearly'] as $c)
-          <option value="{{ $c }}" {{ (old('cycle', $plan->cycle ?? 'monthly') === $c) ? 'selected' : '' }}>{{ $c }}</option>
+    <label>Duration <span class="req">*</span>
+      <input name="duration" type="number" min="1" step="1" required value="{{ old('duration', $plan->duration ?? 1) }}" placeholder="e.g. 30">
+    </label>
+    <label>Duration Unit <span class="req">*</span>
+      <select name="duration_unit">
+        @foreach (['days' => 'Days', 'months' => 'Months'] as $val => $label)
+          <option value="{{ $val }}" {{ (old('duration_unit', $plan->durationUnit ?? 'months') === $val) ? 'selected' : '' }}>{{ $label }}</option>
         @endforeach
       </select>
     </label>

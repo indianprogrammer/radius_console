@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
- * Billing Plans — financial details only (name, price, cycle). The network
+ * Billing Plans — financial details only (name, price, duration). The network
  * behaviour is delegated to a RADIUS-synced BandwidthProfile selected via
  * `bandwidth_profile_id`. Plans are local-only; no RADIUS sync happens here.
  */
@@ -55,7 +55,8 @@ final class PlanController extends Controller
         $data = $request->validate([
             'name' => 'required|string|max:120',
             'price' => 'required|numeric|min:0',
-            'cycle' => 'required|string|in:monthly,quarterly,yearly',
+            'duration' => 'required|integer|min:1',
+            'duration_unit' => 'required|string|in:days,months',
             'bandwidth_profile_id' => 'nullable|integer|exists:bandwidth_profiles,id',
             'data_limit_gb' => 'nullable|integer|min:0',
             'tax_rate_ids' => 'nullable|array',
@@ -75,7 +76,8 @@ final class PlanController extends Controller
             tenantId: tenant_id(),
             name: $data['name'],
             price: (float) $data['price'],
-            cycle: $data['cycle'],
+            duration: (int) $data['duration'],
+            durationUnit: $data['duration_unit'],
             bandwidthProfileId: $data['bandwidth_profile_id'] ? (int) $data['bandwidth_profile_id'] : null,
             dataLimitGb: $data['data_limit_gb'] !== null && $data['data_limit_gb'] !== '' ? (int) $data['data_limit_gb'] : null,
             taxRates: $selectedTaxes,
@@ -108,7 +110,8 @@ final class PlanController extends Controller
         $data = $request->validate([
             'name' => 'required|string|max:120',
             'price' => 'required|numeric|min:0',
-            'cycle' => 'required|string|in:monthly,quarterly,yearly',
+            'duration' => 'required|integer|min:1',
+            'duration_unit' => 'required|string|in:days,months',
             'bandwidth_profile_id' => 'nullable|integer|exists:bandwidth_profiles,id',
             'data_limit_gb' => 'nullable|integer|min:0',
             'tax_rate_ids' => 'nullable|array',
@@ -128,7 +131,8 @@ final class PlanController extends Controller
             tenantId: $plan->tenantId,
             name: $data['name'],
             price: (float) $data['price'],
-            cycle: $data['cycle'],
+            duration: (int) $data['duration'],
+            durationUnit: $data['duration_unit'],
             bandwidthProfileId: $data['bandwidth_profile_id'] ? (int) $data['bandwidth_profile_id'] : null,
             dataLimitGb: $data['data_limit_gb'] !== null && $data['data_limit_gb'] !== '' ? (int) $data['data_limit_gb'] : null,
             taxRates: $selectedTaxes,

@@ -14,12 +14,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class Plan extends Model
 {
     protected $fillable = [
-        'tenant_id', 'name', 'price', 'total', 'cycle', 'bandwidth_profile_id', 'data_limit_gb',
+        'tenant_id', 'name', 'price', 'total', 'duration', 'duration_unit',
+        'bandwidth_profile_id', 'data_limit_gb',
     ];
 
     protected $casts = [
         'price' => 'float',
         'total' => 'float',
+        'duration' => 'integer',
         'data_limit_gb' => 'integer',
     ];
 

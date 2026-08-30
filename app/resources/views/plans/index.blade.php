@@ -3,7 +3,7 @@
   <h1>Plans</h1>
   <a class="btn" href="{{ route('plans.create') }}">+ New Plan</a>
   <table>
-    <thead><tr><th>Name</th><th>Price</th><th>Tax</th><th>Total</th><th>Cycle</th><th>Bandwidth Profile</th><th>Bandwidth (GB)</th><th>Actions</th></tr></thead>
+    <thead><tr><th>Name</th><th>Price</th><th>Tax</th><th>Total</th><th>Duration</th><th>Bandwidth Profile</th><th>Bandwidth (GB)</th><th>Actions</th></tr></thead>
     <tbody>
       @forelse ($plans as $p)
         @php
@@ -23,7 +23,7 @@
           <td>{{ number_format($p->price, 2) }}</td>
           <td>{{ $taxLabel }}</td>
           <td><strong>{{ number_format($total, 2) }}</strong></td>
-          <td>{{ ucfirst($p->cycle) }}</td>
+          <td>{{ $p->durationLabel() }}</td>
           <td>{{ $profile ? $profile->name : '—' }}</td>
           <td>{{ $p->dataLimitGb ? number_format($p->dataLimitGb, 0) . ' GB' : 'Unlimited' }}</td>
           <td>

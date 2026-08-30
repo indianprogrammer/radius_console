@@ -10,7 +10,16 @@
     @csrf
     <label>Name <span class="req">*</span><input name="name" required placeholder="Home 50 Mbps"></label>
     <label>Price <span class="req">*</span><input name="price" type="number" step="0.01" min="0" required placeholder="0.00"></label>
-    <label>Cycle <span class="req">*</span><select name="cycle"><option value="monthly">monthly</option><option value="quarterly">quarterly</option><option value="yearly">yearly</option></select></label>
+    <label>Duration <span class="req">*</span>
+      <input name="duration" type="number" min="1" step="1" required value="{{ old('duration', 1) }}" placeholder="e.g. 30">
+    </label>
+    <label>Duration Unit <span class="req">*</span>
+      <select name="duration_unit">
+        @foreach (['days' => 'Days', 'months' => 'Months'] as $val => $label)
+          <option value="{{ $val }}" {{ old('duration_unit', 'months') === $val ? 'selected' : '' }}>{{ $label }}</option>
+        @endforeach
+      </select>
+    </label>
     <label>Taxes (apply multiple or none)
       <div class="tax-picker">
         @foreach ($taxes as $tr)
