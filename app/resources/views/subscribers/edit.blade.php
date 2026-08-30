@@ -505,15 +505,23 @@
       const row = document.createElement('tr');
       row.innerHTML = `
         <td>
-          <div class="bi-product-picker">
-            <input type="text" name="billing_items[${i}][label]" data-bi="label"
-                   value="${data.label ?? ''}" class="gui-input"
-                   list="bi-products-list-${i}"
-                   placeholder="Type to search products…" autocomplete="off" required>
+          <div class="bi-product-picker" data-bi-row="${i}">
+            <div class="bi-picker-control">
+              <input type="text" name="billing_items[${i}][label]" data-bi="label"
+                     value="${data.label ?? ''}" class="gui-input"
+                     placeholder="Search product or type a custom label…"
+                     autocomplete="off" required>
+              <button type="button" class="bi-picker-toggle" title="Browse products" aria-label="Browse products">▾</button>
+            </div>
             <input type="hidden" name="billing_items[${i}][product_id]" data-bi="product_id" value="${data.product_id ?? ''}">
             <input type="hidden" name="billing_items[${i}][description]" data-bi="description" value="${(data.description ?? '').replace(/"/g,'&quot;')}">
-            <datalist id="bi-products-list-${i}"></datalist>
-            <button type="button" class="btn btn-icon bi-pick-product" title="Pick from Products">🔍</button>
+            <div class="bi-picker-popover" hidden>
+              <div class="bi-picker-search">
+                <input type="text" class="gui-input bi-picker-search-input" placeholder="Type to filter products…">
+              </div>
+              <ul class="bi-picker-list" role="listbox"></ul>
+              <div class="bi-picker-empty">No products. Create one under Products & Services.</div>
+            </div>
           </div>
         </td>
         <td>
@@ -555,49 +563,115 @@
       `;
       biTbody.appendChild(row);
       biRecalcTotal();
+      biWirePicker(row);
+    }
 
-      const labelInput = row.querySelector('[data-bi="label"]');
-      const datalist = row.querySelector('datalist');
-      let debounce;
-      labelInput.addEventListener('input', () => {
-        clearTimeout(debounce);
-        const term = labelInput.value;
-        debounce = setTimeout(async () => {
-          const products = await biLoadProducts(term);
-          datalist.innerHTML = products.map(p =>
-            `<option value="${p.name.replace(/"/g,'&quot;')}" data-pid="${p.id}">`
-          ).join('');
-        }, 200);
-      });
+    // Close any open popovers when clicking outside
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.bi-product-picker')) {
+        document.querySelectorAll('.bi-picker-popover[hidden=""]').forEach(p => p.setAttribute('hidden', ''));
+      }
+    });
 
-      labelInput.addEventListener('change', async () => {
-        const typed = labelInput.value;
-        let products = productCache;
-        if (!products.length) products = await biLoadProducts('');
-        const match = products.find(p => p.name === typed);
-        if (match) biApplyProduct(row, match);
-      });
+    function biWirePicker(row) {
+      const picker  = row.querySelector('.bi-product-picker');
+      const popover = picker.querySelector('.bi-picker-popover');
+      const list    = picker.querySelector('.bi-picker-list');
+      const empty   = picker.querySelector('.bi-picker-empty');
+      const toggle  = picker.querySelector('.bi-picker-toggle');
+      const search  = picker.querySelector('.bi-picker-search-input');
+      const labelInput = picker.querySelector('[data-bi="label"]');
+      let active = 0;
 
-      row.querySelector('.bi-pick-product').addEventListener('click', async () => {
-        const products = await biLoadProducts('');
-        if (!products.length) { alert('No active products found. Create one under Products & Services first.'); return; }
-        const menu = document.createElement('select');
-        menu.size = Math.min(products.length, 8);
-        menu.style.position = 'absolute';
-        menu.style.zIndex = 9999;
-        menu.innerHTML = '<option value="">— Pick a product —</option>' + products.map(p =>
-          `<option value="${p.id}">${p.name} (${p.category} — ${p.default_amount})</option>`
-        ).join('');
-        menu.addEventListener('change', () => {
-          if (!menu.value) return;
-          const picked = products.find(p => String(p.id) === menu.value);
-          if (picked) biApplyProduct(row, picked);
-          menu.remove();
+      const close = () => popover.setAttribute('hidden', '');
+      const open  = () => {
+        document.querySelectorAll('.bi-picker-popover[hidden=""]').forEach(p => p.setAttribute('hidden', ''));
+        popover.removeAttribute('hidden');
+        search.value = '';
+        search.focus();
+        renderList();
+      };
+
+      const renderList = (filter = '') => {
+        const f = filter.toLowerCase();
+        const items = (productCache || []).filter(p => !f || p.name.toLowerCase().includes(f));
+        list.innerHTML = items.map((p, idx) => `
+          <li class="bi-picker-item ${idx === 0 ? 'is-active' : ''}" data-pid="${p.id}" role="option">
+            <div class="bi-picker-item-main">
+              <span class="bi-picker-item-name">${p.name}</span>
+              <span class="bi-picker-item-meta">${p.category} · ${p.unit ?? 'pcs'}</span>
+            </div>
+            <span class="bi-picker-item-amount">${Number(p.default_amount).toFixed(2)}</span>
+          </li>
+        `).join('');
+        empty.style.display = items.length ? 'none' : 'block';
+        active = 0;
+        if (items.length) highlight();
+      };
+
+      const highlight = () => {
+        list.querySelectorAll('.bi-picker-item').forEach((el, i) => {
+          el.classList.toggle('is-active', i === active);
         });
-        menu.addEventListener('blur', () => setTimeout(() => menu.remove(), 150));
-        const btn = row.querySelector('.bi-pick-product');
-        btn.parentElement.appendChild(menu);
-        menu.focus();
+        const el = list.querySelector('.bi-picker-item.is-active');
+        if (el) el.scrollIntoView({ block: 'nearest' });
+      };
+
+      const pickActive = () => {
+        const el = list.querySelector('.bi-picker-item.is-active');
+        if (!el) return;
+        const pid = Number(el.dataset.pid);
+        const product = (productCache || []).find(p => p.id === pid);
+        if (product) {
+          biApplyProduct(row, product);
+          close();
+        }
+      };
+
+      toggle.addEventListener('click', e => {
+        e.stopPropagation();
+        if (popover.hasAttribute('hidden')) open();
+        else close();
+      });
+      labelInput.addEventListener('focus', () => {
+        if (popover.hasAttribute('hidden')) open();
+      });
+
+      search.addEventListener('input', () => renderList(search.value));
+      search.addEventListener('keydown', e => {
+        const count = list.querySelectorAll('.bi-picker-item').length;
+        if (e.key === 'ArrowDown') { active = Math.min(active + 1, count - 1); highlight(); e.preventDefault(); }
+        else if (e.key === 'ArrowUp') { active = Math.max(active - 1, 0); highlight(); e.preventDefault(); }
+        else if (e.key === 'Enter') { pickActive(); e.preventDefault(); }
+        else if (e.key === 'Escape') { close(); labelInput.focus(); }
+      });
+
+      list.addEventListener('click', e => {
+        const item = e.target.closest('.bi-picker-item');
+        if (!item) return;
+        const pid = Number(item.dataset.pid);
+        const product = (productCache || []).find(p => p.id === pid);
+        if (product) {
+          biApplyProduct(row, product);
+          close();
+        }
+      });
+
+      const ensureCache = async () => {
+        if (!productCache || !productCache.length) {
+          productCache = await biLoadProducts('');
+        }
+        renderList();
+      };
+
+      toggle.addEventListener('click', async e => {
+        e.stopPropagation();
+        if (popover.hasAttribute('hidden')) {
+          await ensureCache();
+          open();
+        } else {
+          close();
+        }
       });
     }
 
@@ -739,9 +813,39 @@
     .section-title-row h4 { margin: 0; }
     .billing-items-toolbar { display: flex; align-items: center; gap: 1rem; margin-bottom: .75rem; }
     #billing-items-total { color: var(--color-text-muted); font-size: .85rem; }
-    .bi-product-picker { display: flex; align-items: center; gap: .25rem; }
-    .bi-product-picker input[type="text"] { flex: 1 1 auto; min-width: 0; }
-    .bi-product-picker .bi-pick-product { padding: .3rem .5rem; font-size: .85rem; }
+    .bi-product-picker { position: relative; }
+    .bi-picker-control { display: flex; align-items: center; gap: 0; }
+    .bi-picker-control input { flex: 1 1 auto; min-width: 0; border-right: none; border-radius: var(--radius) 0 0 var(--radius); }
+    .bi-picker-toggle {
+      flex: 0 0 auto; padding: .4rem .5rem; background: var(--color-surface-2);
+      border: 1px solid var(--color-border); border-left: none;
+      border-radius: 0 var(--radius) var(--radius) 0; cursor: pointer;
+      color: var(--color-text-muted); font-size: .9rem; line-height: 1;
+    }
+    .bi-picker-toggle:hover { border-color: var(--color-primary); color: var(--color-primary); }
+    .bi-picker-popover {
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 500;
+      background: var(--color-surface); border: 1px solid var(--color-border);
+      border-radius: var(--radius); box-shadow: var(--shadow), 0 8px 24px rgba(0,0,0,.12);
+      display: flex; flex-direction: column; max-height: 280px; overflow: hidden;
+    }
+    .bi-picker-search { padding: .5rem .6rem; border-bottom: 1px solid var(--color-border); }
+    .bi-picker-search-input { width: 100%; }
+    .bi-picker-list { list-style: none; margin: 0; padding: .25rem 0; overflow-y: auto; flex: 1 1 auto; }
+    .bi-picker-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .45rem .7rem; cursor: pointer; gap: .5rem;
+    }
+    .bi-picker-item:hover, .bi-picker-item.is-active {
+      background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    }
+    .bi-picker-item.is-active { background: color-mix(in srgb, var(--color-primary) 16%, transparent); }
+    .bi-picker-item-main { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; }
+    .bi-picker-item-name { font-size: .85rem; font-weight: 500; color: var(--color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bi-picker-item-meta { font-size: .73rem; color: var(--color-text-muted); }
+    .bi-picker-item-amount { font-size: .83rem; font-weight: 600; color: var(--color-primary); white-space: nowrap; flex: 0 0 auto; }
+    .bi-picker-empty { padding: .6rem .7rem; font-size: .8rem; color: var(--color-text-muted); text-align: center; display: none; }
+    .bi-product-picker .bi-pick-product { display: none; }
 
     /* ── Panels ───────────────────────────────────────────── */
     .panel { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 10px; margin-bottom: 1rem; }
