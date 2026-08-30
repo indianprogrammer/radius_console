@@ -25,8 +25,9 @@ class Invoice extends Model
         'due_date' => 'datetime',
     ];
 
-    public function tenant() { return $this->belongsTo(Tenant::class); }
-    public function subscriber() { return $this->belongsTo(Subscriber::class); }
+    public function tenant(): BelongsTo { return $this->belongsTo(Tenant::class); }
+    public function subscriber(): BelongsTo { return $this->belongsTo(Subscriber::class); }
+    public function items() { return $this->hasMany(InvoiceItem::class); }
 
     /**
      * Compute invoice totals from a pre-tax subtotal and a tax amount.
