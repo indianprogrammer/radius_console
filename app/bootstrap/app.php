@@ -7,6 +7,16 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 
+// Custom autoloader for Models directory (classmap fallback)
+spl_autoload_register(function (string $class): void {
+    if (str_starts_with($class, 'App\\Models\\')) {
+        $model = __DIR__ . '/../Models/' . substr($class, 11) . '.php';
+        if (file_exists($model)) {
+            require_once $model;
+        }
+    }
+});
+
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',

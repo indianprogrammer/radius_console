@@ -4,6 +4,7 @@ use App\Http\Controllers\BandwidthProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\NasController;
 use App\Http\Controllers\PlanController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SubscriberController;
 use App\Http\Controllers\TaxRateController;
 use Illuminate\Support\Facades\Route;
@@ -14,6 +15,9 @@ Route::prefix('subscribers')->name('subscribers.')->group(function () {
     Route::get('/', [SubscriberController::class, 'index'])->name('index');
     Route::get('/create', [SubscriberController::class, 'create'])->name('create');
     Route::post('/', [SubscriberController::class, 'store'])->name('store');
+    Route::get('/{id}/edit', [SubscriberController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [SubscriberController::class, 'update'])->name('update');
+    Route::delete('/{id}', [SubscriberController::class, 'destroy'])->name('destroy');
 });
 
 Route::prefix('nas')->name('nas.')->group(function () {
@@ -53,6 +57,17 @@ Route::prefix('tax-rates')->name('tax-rates.')->group(function () {
     Route::get('/{id}/edit', [TaxRateController::class, 'edit'])->name('edit');
     Route::put('/{id}', [TaxRateController::class, 'update'])->name('update');
     Route::delete('/{id}', [TaxRateController::class, 'destroy'])->name('destroy');
+});
+
+// Products & Services (managed under Billing & Invoices).
+Route::prefix('products')->name('products.')->group(function () {
+    Route::get('/', [ProductController::class, 'index'])->name('index');
+    Route::get('/autocomplete', [ProductController::class, 'autocomplete'])->name('autocomplete');
+    Route::get('/create', [ProductController::class, 'create'])->name('create');
+    Route::post('/', [ProductController::class, 'store'])->name('store');
+    Route::get('/{id}/edit', [ProductController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [ProductController::class, 'update'])->name('update');
+    Route::delete('/{id}', [ProductController::class, 'destroy'])->name('destroy');
 });
 
 // Per-user theme preference persistence (best-effort, SRD §3.2).

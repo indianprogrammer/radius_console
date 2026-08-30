@@ -21,6 +21,11 @@
     'Billing & Invoices' => [
       ['label' => 'Tax Rates', 'route' => 'tax-rates.index', 'ready' => true],
       ['label' => 'Plans', 'route' => 'plans.index', 'ready' => true],
+      ['label' => 'Products & Services', 'route' => 'products.index', 'ready' => true],
+    ],
+    'Franchise Management' => [
+      ['label' => 'Franchise', 'route' => 'franchise.index', 'ready' => false],
+      ['label' => 'Branch', 'route' => 'branch.index', 'ready' => false],
     ],
     'Radius Control' => [
       ['label' => 'Bandwidth Control', 'route' => 'bandwidth-profiles.index', 'ready' => true],

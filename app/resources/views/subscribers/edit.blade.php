@@ -139,7 +139,7 @@
           <table class="data-table" id="billing-items-table">
             <thead>
               <tr>
-                <th>Label</th>
+                <th style="min-width:200px;">Product / Label</th>
                 <th>Type</th>
                 <th>Amount</th>
                 <th>Qty</th>
@@ -454,6 +454,22 @@
     let biCount = 0;
     const biTbody = document.querySelector('#billing-items-table tbody');
     const biTotalEl = document.getElementById('billing-items-total');
+    const PRODUCT_AUTOCOMPLETE_URL = "{{ route('products.autocomplete') }}";
+    let productCache = [];
+
+    async function biLoadProducts(q = '') {
+      try {
+        const url = new URL(PRODUCT_AUTOCOMPLETE_URL, window.location.origin);
+        if (q) url.searchParams.set('q', q);
+        const res = await fetch(url.toString(), {
+          headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        if (!res.ok) return [];
+        return await res.json();
+      } catch (e) {
+        return [];
+      }
+    }
 
     function biRecalcTotal() {
       let total = 0;
@@ -465,13 +481,41 @@
       if (biTotalEl) biTotalEl.textContent = 'Total: ' + total.toFixed(2);
     }
 
+    function biApplyProduct(row, product) {
+      const labelInput = row.querySelector('[data-bi="label"]');
+      if (labelInput) labelInput.value = product.name;
+      const descInput = row.querySelector('[data-bi="description"]');
+      if (descInput && product.description) descInput.value = product.description;
+      const amountInput = row.querySelector('[data-bi="amount"]');
+      if (amountInput && product.default_amount !== undefined) amountInput.value = product.default_amount;
+      const typeSelect = row.querySelector('[data-bi="type"]');
+      if (typeSelect && product.category) {
+        const map = { 'one-time': 'one-time', 'recurring': 'recurring' };
+        typeSelect.value = map[product.category] || 'one-time';
+      }
+      const productIdInput = row.querySelector('[data-bi="product_id"]');
+      if (productIdInput) productIdInput.value = product.id;
+      biRecalcTotal();
+    }
+
     function biAddRow(data = {}) {
       const i = biCount++;
       const typeOpt = (val) => data.type === val ? 'selected' : '';
       const cycleOpt = (val) => data.billing_cycle === val ? 'selected' : '';
       const row = document.createElement('tr');
       row.innerHTML = `
-        <td><input type="text" name="billing_items[${i}][label]" data-bi="label" value="${data.label ?? ''}" class="gui-input" placeholder="e.g. Security Deposit, IP Charge" required></td>
+        <td>
+          <div class="bi-product-picker">
+            <input type="text" name="billing_items[${i}][label]" data-bi="label"
+                   value="${data.label ?? ''}" class="gui-input"
+                   list="bi-products-list-${i}"
+                   placeholder="Type to search products…" autocomplete="off" required>
+            <input type="hidden" name="billing_items[${i}][product_id]" data-bi="product_id" value="${data.product_id ?? ''}">
+            <input type="hidden" name="billing_items[${i}][description]" data-bi="description" value="${(data.description ?? '').replace(/"/g,'&quot;')}">
+            <datalist id="bi-products-list-${i}"></datalist>
+            <button type="button" class="btn btn-icon bi-pick-product" title="Pick from Products">🔍</button>
+          </div>
+        </td>
         <td>
           <select name="billing_items[${i}][type]" data-bi="type" class="gui-input">
             <option value="one-time"   ${typeOpt('one-time')}>one-time</option>
@@ -511,6 +555,50 @@
       `;
       biTbody.appendChild(row);
       biRecalcTotal();
+
+      const labelInput = row.querySelector('[data-bi="label"]');
+      const datalist = row.querySelector('datalist');
+      let debounce;
+      labelInput.addEventListener('input', () => {
+        clearTimeout(debounce);
+        const term = labelInput.value;
+        debounce = setTimeout(async () => {
+          const products = await biLoadProducts(term);
+          datalist.innerHTML = products.map(p =>
+            `<option value="${p.name.replace(/"/g,'&quot;')}" data-pid="${p.id}">`
+          ).join('');
+        }, 200);
+      });
+
+      labelInput.addEventListener('change', async () => {
+        const typed = labelInput.value;
+        let products = productCache;
+        if (!products.length) products = await biLoadProducts('');
+        const match = products.find(p => p.name === typed);
+        if (match) biApplyProduct(row, match);
+      });
+
+      row.querySelector('.bi-pick-product').addEventListener('click', async () => {
+        const products = await biLoadProducts('');
+        if (!products.length) { alert('No active products found. Create one under Products & Services first.'); return; }
+        const menu = document.createElement('select');
+        menu.size = Math.min(products.length, 8);
+        menu.style.position = 'absolute';
+        menu.style.zIndex = 9999;
+        menu.innerHTML = '<option value="">— Pick a product —</option>' + products.map(p =>
+          `<option value="${p.id}">${p.name} (${p.category} — ${p.default_amount})</option>`
+        ).join('');
+        menu.addEventListener('change', () => {
+          if (!menu.value) return;
+          const picked = products.find(p => String(p.id) === menu.value);
+          if (picked) biApplyProduct(row, picked);
+          menu.remove();
+        });
+        menu.addEventListener('blur', () => setTimeout(() => menu.remove(), 150));
+        const btn = row.querySelector('.bi-pick-product');
+        btn.parentElement.appendChild(menu);
+        menu.focus();
+      });
     }
 
     document.getElementById('add-billing-item').addEventListener('click', () => {
@@ -651,6 +739,9 @@
     .section-title-row h4 { margin: 0; }
     .billing-items-toolbar { display: flex; align-items: center; gap: 1rem; margin-bottom: .75rem; }
     #billing-items-total { color: var(--color-text-muted); font-size: .85rem; }
+    .bi-product-picker { display: flex; align-items: center; gap: .25rem; }
+    .bi-product-picker input[type="text"] { flex: 1 1 auto; min-width: 0; }
+    .bi-product-picker .bi-pick-product { padding: .3rem .5rem; font-size: .85rem; }
 
     /* ── Panels ───────────────────────────────────────────── */
     .panel { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 10px; margin-bottom: 1rem; }
