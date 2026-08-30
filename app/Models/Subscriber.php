@@ -21,23 +21,17 @@ class Subscriber extends Model
         'first_name', 'last_name',
         'father_or_company', 'mobile', 'email',
 
+        // Access / authentication method
+        'access_type', 'pppoe_username', 'pppoe_password',
+
         // Billing Information
         'billing_type', 'gstin', 'installation_amount', 'security_deposit',
         'po_number', 'po_date',
 
         // Network Information
-        'ip_mode', 'pool_name', 'node_id', 'pop_id', 'switch_id',
-        'switch_port', 'connection_type', 'cable_length', 'domain',
-        'auth_protocol', 'auto_renew', 'bind_mac', 'bind_static_ip',
-        'exclude_mac_bind', 'dont_suspend', 'circuit_id',
-
-        // Location Information
-        'country', 'state', 'city', 'zip', 'door_no', 'area', 'colony',
-        'building', 'billing_address', 'installation_address',
-        'house_type', 'connection_location', 'latitude', 'longitude',
-
-        // Payments
-        'advance_payment', 'payment_ref_no', 'payment_type', 'payment_comment',
+        'ip_mode', 'pool_name',
+        'auto_renew', 'bind_mac', 'bind_static_ip',
+        'exclude_mac_bind', 'dont_suspend',
 
         // Special discounts / additional charges (JSON: [{reason,desc,approved_by,amount,type}])
         'special_charges',
@@ -56,10 +50,6 @@ class Subscriber extends Model
         'po_date'            => 'datetime',
         'installation_amount'=> 'decimal:2',
         'security_deposit'   => 'decimal:2',
-        'cable_length'       => 'integer',
-        'advance_payment'    => 'decimal:2',
-        'latitude'           => 'float',
-        'longitude'          => 'float',
         'special_charges'    => 'array',
         'billing_items'      => 'array',
     ];

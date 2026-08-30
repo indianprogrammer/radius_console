@@ -59,6 +59,10 @@ final class SubscriberController extends Controller
             'father_or_company'     => 'nullable|string|max:200',
             'mobile'                => 'nullable|string|max:20',
             'email'                 => 'nullable|email|max:255',
+            // Access method
+            'access_type'           => 'nullable|string|in:pppoe,ipoe',
+            'pppoe_username'        => 'nullable|string|max:64|required_if:access_type,pppoe',
+            'pppoe_password'        => 'nullable|string|max:128|required_if:access_type,pppoe',
             // Billing
             'billing_type'          => 'nullable|integer|min:1|max:4',
             'gstin'                => 'nullable|string|max:15',
@@ -69,40 +73,11 @@ final class SubscriberController extends Controller
             // Network
             'ip_mode'               => 'nullable|integer|min:1|max:4',
             'pool_name'             => 'nullable|string|max:100',
-            'node_id'               => 'nullable|string|max:50',
-            'pop_id'                => 'nullable|string|max:50',
-            'switch_id'             => 'nullable|string|max:50',
-            'switch_port'           => 'nullable|string|max:50',
-            'connection_type'       => 'nullable|integer|min:1|max:4',
-            'cable_length'          => 'nullable|integer|min:0',
-            'domain'                => 'nullable|string|max:100',
-            'auth_protocol'         => 'nullable|integer|min:1|max:2',
             'auto_renew'           => 'nullable|integer|in:0,1',
             'bind_mac'             => 'nullable|integer|in:0,1',
             'bind_static_ip'       => 'nullable|integer|in:0,1',
             'exclude_mac_bind'     => 'nullable|integer|in:0,1',
             'dont_suspend'         => 'nullable|integer|in:0,1',
-            'circuit_id'           => 'nullable|string|max:100',
-            // Location
-            'country'               => 'nullable|string|max:100',
-            'state'                 => 'nullable|string|max:100',
-            'city'                 => 'nullable|string|max:100',
-            'zip'                  => 'nullable|string|max:20',
-            'door_no'              => 'nullable|string|max:50',
-            'area'                 => 'nullable|string|max:100',
-            'colony'               => 'nullable|string|max:100',
-            'building'              => 'nullable|string|max:100',
-            'billing_address'       => 'nullable|string|max:500',
-            'installation_address'  => 'nullable|string|max:500',
-            'house_type'            => 'nullable|string|max:50',
-            'connection_location'   => 'nullable|string|max:200',
-            'latitude'              => 'nullable|numeric|min:-90|max:90',
-            'longitude'             => 'nullable|numeric|min:-180|max:180',
-            // Payments
-            'advance_payment'       => 'nullable|numeric|min:0',
-            'payment_ref_no'        => 'nullable|string|max:50',
-            'payment_type'          => 'nullable|integer|min:1|max:17',
-            'payment_comment'       => 'nullable|string|max:255',
             // Special charges (repeater rows)
             'special'               => 'nullable|array',
             'special.*.reason'      => 'nullable|string|max:200',
@@ -154,16 +129,12 @@ final class SubscriberController extends Controller
         $cafFields = [
             'first_name','last_name',
             'father_or_company','mobile','email',
+            'access_type','pppoe_username','pppoe_password',
             'billing_type','gstin','installation_amount','security_deposit',
             'po_number','po_date',
-            'ip_mode','pool_name','node_id','pop_id','switch_id','switch_port',
-            'connection_type','cable_length','domain','auth_protocol',
+            'ip_mode','pool_name',
             'auto_renew','bind_mac','bind_static_ip','exclude_mac_bind',
-            'dont_suspend','circuit_id',
-            'country','state','city','zip','door_no','area','colony','building',
-            'billing_address','installation_address','house_type',
-            'connection_location','latitude','longitude',
-            'advance_payment','payment_ref_no','payment_type','payment_comment',
+            'dont_suspend',
         ];
 
         $update = [];
@@ -255,6 +226,10 @@ final class SubscriberController extends Controller
             'father_or_company'     => 'nullable|string|max:200',
             'mobile'                => 'nullable|string|max:20',
             'email'                 => 'nullable|email|max:255',
+            // Access method
+            'access_type'           => 'nullable|string|in:pppoe,ipoe',
+            'pppoe_username'        => 'nullable|string|max:64|required_if:access_type,pppoe',
+            'pppoe_password'        => 'nullable|string|max:128',
             // Billing
             'billing_type'          => 'nullable|integer|min:1|max:4',
             'gstin'                => 'nullable|string|max:15',
@@ -265,40 +240,12 @@ final class SubscriberController extends Controller
             // Network
             'ip_mode'               => 'nullable|integer|min:1|max:4',
             'pool_name'             => 'nullable|string|max:100',
-            'node_id'               => 'nullable|string|max:50',
-            'pop_id'                => 'nullable|string|max:50',
-            'switch_id'             => 'nullable|string|max:50',
-            'switch_port'           => 'nullable|string|max:50',
-            'connection_type'       => 'nullable|integer|min:1|max:4',
-            'cable_length'          => 'nullable|integer|min:0',
-            'domain'                => 'nullable|string|max:100',
-            'auth_protocol'         => 'nullable|integer|min:1|max:2',
             'auto_renew'           => 'nullable|integer|in:0,1',
             'bind_mac'             => 'nullable|integer|in:0,1',
             'bind_static_ip'       => 'nullable|integer|in:0,1',
             'exclude_mac_bind'     => 'nullable|integer|in:0,1',
             'dont_suspend'         => 'nullable|integer|in:0,1',
-            'circuit_id'           => 'nullable|string|max:100',
-            // Location
-            'country'               => 'nullable|string|max:100',
-            'state'                 => 'nullable|string|max:100',
-            'city'                 => 'nullable|string|max:100',
-            'zip'                  => 'nullable|string|max:20',
-            'door_no'              => 'nullable|string|max:50',
-            'area'                 => 'nullable|string|max:100',
-            'colony'               => 'nullable|string|max:100',
-            'building'              => 'nullable|string|max:100',
-            'billing_address'       => 'nullable|string|max:500',
-            'installation_address'  => 'nullable|string|max:500',
-            'house_type'           => 'nullable|string|max:50',
-            'connection_location'   => 'nullable|string|max:200',
-            'latitude'              => 'nullable|numeric|min:-90|max:90',
-            'longitude'             => 'nullable|numeric|min:-180|max:180',
-            // Payments
-            'advance_payment'       => 'nullable|numeric|min:0',
-            'payment_ref_no'        => 'nullable|string|max:50',
-            'payment_type'         => 'nullable|integer|min:1|max:17',
-            'payment_comment'      => 'nullable|string|max:255',
+
             // Special charges
             'special'              => 'nullable|array',
             'special.*.reason'     => 'nullable|string|max:200',
@@ -347,16 +294,12 @@ final class SubscriberController extends Controller
         $cafFields = [
             'first_name','last_name',
             'father_or_company','mobile','email',
+            'access_type','pppoe_username','pppoe_password',
             'billing_type','gstin','installation_amount','security_deposit',
             'po_number','po_date',
-            'ip_mode','pool_name','node_id','pop_id','switch_id','switch_port',
-            'connection_type','cable_length','domain','auth_protocol',
+            'ip_mode','pool_name',
             'auto_renew','bind_mac','bind_static_ip','exclude_mac_bind',
-            'dont_suspend','circuit_id',
-            'country','state','city','zip','door_no','area','colony','building',
-            'billing_address','installation_address','house_type',
-            'connection_location','latitude','longitude',
-            'advance_payment','payment_ref_no','payment_type','payment_comment',
+            'dont_suspend',
         ];
 
         $updateData = [];
@@ -364,6 +307,10 @@ final class SubscriberController extends Controller
             if (array_key_exists($field, $data)) {
                 $updateData[$field] = $data[$field];
             }
+        }
+        // A blank PPPoE password means "keep the existing one".
+        if (array_key_exists('pppoe_password', $updateData) && $updateData['pppoe_password'] === null) {
+            unset($updateData['pppoe_password']);
         }
         if (!empty($data['special'])) {
             $updateData['special_charges'] = array_values($data['special']);
