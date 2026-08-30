@@ -18,7 +18,7 @@ class ProductController extends Controller
         $products = Product::query()
             ->where('tenant_id', tenant_id())
             ->where('is_active', true)
-            ->when($q, fn($query) => $query->where('name', 'like', "%{$q}%"))
+            ->when($q, fn($query) => $query->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($q) . '%']))
             ->orderBy('name')
             ->limit(20)
             ->get(['id', 'name', 'category', 'default_amount', 'unit']);
