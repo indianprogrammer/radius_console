@@ -103,11 +103,15 @@ final class SubscriberController extends Controller
         $tenantSlug = $tenant->slug ?? 'tenant';
 
         // 1. Provision the core RADIUS subscriber (only RADIUS-relevant fields).
-        //    Auto-generate username / password if not supplied via the form.
-        $provUsername = $data['username'] ?: (
-            strtolower(trim(($data['first_name'] ?? '') . '.' . ($data['last_name'] ?? '') . random_int(10, 99)))
-        );
-        $provPassword = $data['password'] ?: bin2hex(random_bytes(8));
+        //    The form no longer collects a RADIUS username/password, so both keys
+        //    may be absent from $data entirely. Fall back to the PPPoE credentials
+        //    when present, then to a generated pair.
+        $provUsername = ($data['username'] ?? null)
+            ?: ($data['pppoe_username'] ?? null)
+            ?: strtolower(trim(($data['first_name'] ?? '') . '.' . ($data['last_name'] ?? '') . random_int(10, 99)));
+        $provPassword = ($data['password'] ?? null)
+            ?: ($data['pppoe_password'] ?? null)
+            ?: bin2hex(random_bytes(8));
 
         try {
             $provisioned = $provision->execute([
@@ -271,8 +275,10 @@ final class SubscriberController extends Controller
         $tenantSlug = $tenant->slug ?? 'tenant';
 
         // Only include password in the data if it was actually supplied.
+        // The form does not expose the RADIUS username, so keep the existing one
+        // unless a new value was explicitly submitted.
         $radiusData = [
-            'username'             => $data['username'],
+            'username'             => $data['username'] ?? $sub->username,
             'plan_id'             => $data['plan_id'] ?? null,
             'bandwidth_profile_id'=> $data['bandwidth_profile_id'] ?? null,
             'mac'                 => $data['mac'] ?? null,

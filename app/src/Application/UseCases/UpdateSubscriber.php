@@ -34,7 +34,7 @@ final class UpdateSubscriber
             $bandwidthProfileId = $plan?->bandwidthProfileId;
         }
         $profile = $bandwidthProfileId !== null ? $this->profiles->find((int) $bandwidthProfileId) : null;
-        $radiusProfileId = $profile?->radiusProfileId;
+        $radiusProfileId = $profile?->radiusPlanId;
 
         // Update domain entity fields.
         if (isset($data['username'])) {
@@ -75,6 +75,7 @@ final class UpdateSubscriber
             'status' => $subscriber->status,
             'mac_lock_enabled' => $subscriber->mac ? 1 : 0,
             'static_ip' => $subscriber->staticIp,
+            'expiry_date' => self::toRadiusDateTime($subscriber->expiry),
         ];
         // Only send password if it was changed.
         if (!isset($data['password'])) {
@@ -83,6 +84,20 @@ final class UpdateSubscriber
         $this->radius->updateUser($subscriber->radiusUserId, $payload);
 
         return $subscriber;
+    }
+
+    /**
+     * Normalise an expiry value to the `Y-m-d H:i:s` DATETIME the RADIUS API
+     * expects. The form submits `Y-m-d\TH:i`; anything unparseable is dropped
+     * rather than sent as an invalid date.
+     */
+    private static function toRadiusDateTime(?string $value): ?string
+    {
+        if ($value === null || trim($value) === '') {
+            return null;
+        }
+        $ts = strtotime($value);
+        return $ts === false ? null : date('Y-m-d H:i:s', $ts);
     }
 
     /** AES-256-GCM encryption using the app key; placeholder for vault-backed key in prod. */

@@ -43,7 +43,7 @@ final class ProvisionSubscriber
             throw new \InvalidArgumentException('Unknown bandwidth_profile_id');
         }
         // The RADIUS "plan_id" is the bandwidth profile's RADIUS record.
-        $radiusProfileId = $profile?->radiusProfileId;
+        $radiusProfileId = $profile?->radiusPlanId;
 
         $sub = new Subscriber(
             id: null,
@@ -55,6 +55,7 @@ final class ProvisionSubscriber
             planId: $plan?->id,
             bandwidthProfileId: $profile?->id,
             status: Subscriber::STATUS_ACTIVE,
+            expiry: $data['expiry'] ?? null,
         );
         // Compute tenant-namespaced RADIUS username up front (SRD §4.1.1)
         // so the local row satisfies the NOT NULL radius_username column.
@@ -71,11 +72,26 @@ final class ProvisionSubscriber
             'status' => 'active',
             'mac_lock_enabled' => 1,
             'static_ip' => $data['static_ip'] ?? null,
+            'expiry_date' => self::toRadiusDateTime($sub->expiry),
         ]);
         $sub->radiusUserId = $created['id'] ?? null;
         $this->subscribers->save($sub);
 
         return $sub;
+    }
+
+    /**
+     * Normalise an expiry value to the `Y-m-d H:i:s` DATETIME the RADIUS API
+     * expects. The form submits `Y-m-d\TH:i`; anything unparseable is dropped
+     * rather than sent as an invalid date.
+     */
+    private static function toRadiusDateTime(?string $value): ?string
+    {
+        if ($value === null || trim($value) === '') {
+            return null;
+        }
+        $ts = strtotime($value);
+        return $ts === false ? null : date('Y-m-d H:i:s', $ts);
     }
 
     /** AES-256-GCM encryption using the app key; placeholder for vault-backed key in prod. */
