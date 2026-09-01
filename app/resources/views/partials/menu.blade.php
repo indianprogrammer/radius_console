@@ -15,7 +15,6 @@
       ['label' => 'IPDR / Compliance', 'route' => '#', 'ready' => false, 'note' => 'Pending IPDR Server (#7) — IpdrClient adapter'],
       ['label' => 'Cron / Automation', 'route' => '#', 'ready' => false],
       ['label' => 'Tenant Settings', 'route' => '#', 'ready' => false],
-      ['label' => 'RBAC / Staff', 'route' => '#', 'ready' => false],
       ['label' => 'Audit Log', 'route' => '#', 'ready' => false],
     ],
     'Billing & Invoices' => [
@@ -27,8 +26,17 @@
       ['label' => 'Products & Services', 'route' => 'products.index', 'ready' => true],
     ],
     'Franchise Management' => [
-      ['label' => 'Franchise', 'route' => 'franchise.index', 'ready' => false],
+      ['label' => 'Franchise', 'route' => 'franchises.index', 'ready' => true],
       ['label' => 'Branch', 'route' => 'branch.index', 'ready' => false],
+    ],
+    'Staff & HR' => [
+      ['label' => 'Staff', 'route' => 'staff.index', 'ready' => true],
+      ['label' => 'Teams / Groups', 'route' => 'staff-groups.index', 'ready' => true],
+      ['label' => 'Attendance', 'route' => 'attendance.index', 'ready' => true],
+      ['label' => 'Payroll', 'route' => 'payroll.index', 'ready' => true],
+    ],
+    'Support Tickets' => [
+      ['label' => 'Tickets', 'route' => 'tickets.index', 'ready' => true],
     ],
     'Radius Control' => [
       ['label' => 'Bandwidth Control', 'route' => 'bandwidth-profiles.index', 'ready' => true],

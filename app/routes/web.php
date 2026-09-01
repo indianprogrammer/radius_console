@@ -1,15 +1,21 @@
 <?php
 
+use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\BandwidthProfileController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FranchiseController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\LedgerController;
 use App\Http\Controllers\NasController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\StaffController;
+use App\Http\Controllers\StaffGroupController;
 use App\Http\Controllers\SubscriberController;
 use App\Http\Controllers\TaxRateController;
+use App\Http\Controllers\TicketController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', DashboardController::class)->name('dashboard');
@@ -100,6 +106,78 @@ Route::prefix('payments')->name('payments.')->group(function () {
 // invoices (debit) + payments (credit); no write routes by design.
 Route::prefix('ledger')->name('ledger.')->group(function () {
     Route::get('/', [LedgerController::class, 'index'])->name('index');
+});
+
+// Franchises / LCOs (managed under Franchise Management, SRD §5.4).
+Route::prefix('franchises')->name('franchises.')->group(function () {
+    Route::get('/', [FranchiseController::class, 'index'])->name('index');
+    Route::get('/create', [FranchiseController::class, 'create'])->name('create');
+    Route::post('/', [FranchiseController::class, 'store'])->name('store');
+    Route::get('/{id}/edit', [FranchiseController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [FranchiseController::class, 'update'])->name('update');
+    Route::delete('/{id}', [FranchiseController::class, 'destroy'])->name('destroy');
+});
+
+// Staff / employee master (Staff & HR). `/staff/groups` is declared BEFORE
+// `/staff/{id}` would ever be reachable as a separate prefix, so there is no
+// collision — teams live under their own `staff-groups` prefix.
+Route::prefix('staff')->name('staff.')->group(function () {
+    Route::get('/', [StaffController::class, 'index'])->name('index');
+    Route::get('/create', [StaffController::class, 'create'])->name('create');
+    Route::post('/', [StaffController::class, 'store'])->name('store');
+    Route::get('/{id}', [StaffController::class, 'show'])->name('show');
+    Route::get('/{id}/edit', [StaffController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [StaffController::class, 'update'])->name('update');
+    Route::delete('/{id}', [StaffController::class, 'destroy'])->name('destroy');
+});
+
+// Staff groups / teams — targets for bulk ticket assignment.
+Route::prefix('staff-groups')->name('staff-groups.')->group(function () {
+    Route::get('/', [StaffGroupController::class, 'index'])->name('index');
+    Route::get('/create', [StaffGroupController::class, 'create'])->name('create');
+    Route::post('/', [StaffGroupController::class, 'store'])->name('store');
+    Route::get('/{id}/edit', [StaffGroupController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [StaffGroupController::class, 'update'])->name('update');
+    Route::delete('/{id}', [StaffGroupController::class, 'destroy'])->name('destroy');
+});
+
+// Attendance register (Staff & HR). The register saves a whole day at once.
+Route::prefix('attendance')->name('attendance.')->group(function () {
+    Route::get('/', [AttendanceController::class, 'index'])->name('index');
+    Route::post('/', [AttendanceController::class, 'bulkStore'])->name('bulk-store');
+    Route::get('/staff/{staff}', [AttendanceController::class, 'sheet'])->name('sheet');
+    Route::delete('/{id}', [AttendanceController::class, 'destroy'])->name('destroy');
+});
+
+// Payroll / payslips (Staff & HR). Always computed from attendance by
+// PayrollService — there is no free-form earnings editor by design.
+Route::prefix('payroll')->name('payroll.')->group(function () {
+    Route::get('/', [PayrollController::class, 'index'])->name('index');
+    Route::get('/create', [PayrollController::class, 'create'])->name('create');
+    Route::post('/', [PayrollController::class, 'store'])->name('store');
+    Route::get('/{id}', [PayrollController::class, 'show'])->name('show');
+    Route::get('/{id}/edit', [PayrollController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [PayrollController::class, 'update'])->name('update');
+    Route::delete('/{id}', [PayrollController::class, 'destroy'])->name('destroy');
+});
+
+// Tickets / helpdesk. Assignment has its own endpoints so the audit trail in
+// `ticket_events` is written by TicketAssigner on every change.
+Route::prefix('tickets')->name('tickets.')->group(function () {
+    Route::get('/', [TicketController::class, 'index'])->name('index');
+    Route::get('/create', [TicketController::class, 'create'])->name('create');
+    Route::post('/', [TicketController::class, 'store'])->name('store');
+    Route::get('/{id}', [TicketController::class, 'show'])->name('show');
+    Route::get('/{id}/edit', [TicketController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [TicketController::class, 'update'])->name('update');
+    Route::delete('/{id}', [TicketController::class, 'destroy'])->name('destroy');
+
+    // Assign to one / many staff or a team; reassign to a new owner.
+    Route::post('/{id}/assign', [TicketController::class, 'assign'])->name('assign');
+    Route::post('/{id}/reassign', [TicketController::class, 'reassign'])->name('reassign');
+    Route::post('/{id}/comment', [TicketController::class, 'comment'])->name('comment');
+    Route::delete('/{ticket}/assignees/{staff}', [TicketController::class, 'removeAssignee'])
+        ->name('assignees.destroy');
 });
 
 // Per-user theme preference persistence (best-effort, SRD §3.2).
