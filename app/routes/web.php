@@ -2,7 +2,10 @@
 
 use App\Http\Controllers\BandwidthProfileController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\LedgerController;
 use App\Http\Controllers\NasController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SubscriberController;
@@ -68,6 +71,35 @@ Route::prefix('products')->name('products.')->group(function () {
     Route::get('/{id}/edit', [ProductController::class, 'edit'])->name('edit');
     Route::put('/{id}', [ProductController::class, 'update'])->name('update');
     Route::delete('/{id}', [ProductController::class, 'destroy'])->name('destroy');
+});
+
+// Invoices (managed under Billing & Invoices). Generated from a subscriber's
+// billing items, so there is no free-form line-item editor — only generate,
+// view and status/due-date maintenance.
+Route::prefix('invoices')->name('invoices.')->group(function () {
+    Route::get('/', [InvoiceController::class, 'index'])->name('index');
+    Route::get('/create', [InvoiceController::class, 'create'])->name('create');
+    Route::post('/', [InvoiceController::class, 'store'])->name('store');
+    Route::get('/{id}', [InvoiceController::class, 'show'])->name('show');
+    Route::get('/{id}/edit', [InvoiceController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [InvoiceController::class, 'update'])->name('update');
+    Route::delete('/{id}', [InvoiceController::class, 'destroy'])->name('destroy');
+});
+
+// Payments / receipts (managed under Billing & Invoices).
+Route::prefix('payments')->name('payments.')->group(function () {
+    Route::get('/', [PaymentController::class, 'index'])->name('index');
+    Route::get('/create', [PaymentController::class, 'create'])->name('create');
+    Route::post('/', [PaymentController::class, 'store'])->name('store');
+    Route::get('/{id}/edit', [PaymentController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [PaymentController::class, 'update'])->name('update');
+    Route::delete('/{id}', [PaymentController::class, 'destroy'])->name('destroy');
+});
+
+// Ledger (managed under Billing & Invoices). Read-only statement derived from
+// invoices (debit) + payments (credit); no write routes by design.
+Route::prefix('ledger')->name('ledger.')->group(function () {
+    Route::get('/', [LedgerController::class, 'index'])->name('index');
 });
 
 // Per-user theme preference persistence (best-effort, SRD §3.2).

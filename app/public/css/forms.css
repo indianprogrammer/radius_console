@@ -236,6 +236,76 @@ input[type="file"].gui-input { padding: .45rem .65rem; }
 .btn-danger { background: #c0392b; color: #fff; border: none; }
 .btn-danger:hover { background: #a93226; }
 
+/* ─────────────────────────────────────────────────────────────
+   Billing & Invoices listings (Invoices, Payments, Ledger)
+   ───────────────────────────────────────────────────────────── */
+
+/* Summary tiles above a list (billed / collected / outstanding …). */
+.stat-cards { display: flex; flex-wrap: wrap; gap: .75rem; margin: 0 0 1rem; }
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+  min-width: 9rem;
+  padding: .65rem .9rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-primary);
+  border-radius: 8px;
+}
+.stat-card .sc-label { font-size: .72rem; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: .04em; }
+.stat-card .sc-value { font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stat-card .sc-ok   { color: #1e8449; }
+.stat-card .sc-warn { color: #b9770e; }
+.stat-card .sc-bad  { color: #c0392b; }
+
+/* Filter / search bar shared by the listing pages. */
+.search-form { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin: .75rem 0 1rem; }
+.search-form input[type="text"],
+.search-form input[type="date"],
+.search-form select {
+  padding: .45rem .6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: .85rem;
+}
+.search-form input[type="text"] { min-width: 16rem; }
+
+/* Right-align money columns in the listing tables. */
+th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* Status pills. Neutral by default; semantic colours per status. */
+.pill {
+  display: inline-block;
+  padding: .1rem .45rem;
+  border-radius: 999px;
+  font-size: .7rem;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--color-text-muted) 18%, transparent);
+  color: var(--color-text);
+}
+.pill + .pill { margin-left: .25rem; }
+.pill-paid,
+.pill-completed  { background: #d5f5e3; color: #1e8449; }
+.pill-partial,
+.pill-pending    { background: #fdebd0; color: #b9770e; }
+.pill-unpaid,
+.pill-invoice    { background: #fdecea; color: #c0392b; }
+.pill-overdue,
+.pill-failed     { background: #c0392b; color: #fff; }
+.pill-payment    { background: #d5f5e3; color: #1e8449; }
+.pill-draft,
+.pill-void       { background: color-mix(in srgb, var(--color-text-muted) 22%, transparent); color: var(--color-text-muted); }
+.pill-info       { background: #d6eaf8; color: #1f618d; }
+
+/* A select driven by another control (e.g. subscriber locked by invoice). */
+.gui-input.is-locked { opacity: .7; cursor: not-allowed; }
+
 /* ── Responsive Breakpoints ────────────────────────────────── */
 @media (max-width: 1280px) {
   .panel-body .form-grid { grid-template-columns: repeat(4, 1fr); }

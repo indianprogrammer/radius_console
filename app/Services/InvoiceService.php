@@ -65,6 +65,12 @@ class InvoiceService
                 'number'        => $this->nextInvoiceNumber($subscriber->tenant_id),
                 'status'        => 'unpaid',
                 'due_date'      => Carbon::now()->addDays(15)->toDateString(),
+                // `amount` is NOT NULL; seed the money columns at zero and let
+                // recomputeTotals() fill them once line items are attached.
+                'subtotal'      => 0,
+                'tax_amount'    => 0,
+                'amount'        => 0,
+                'total'         => 0,
             ]);
         }
 
@@ -143,12 +149,23 @@ class InvoiceService
     }
 
     /**
-     * Pull the default tax rate for the subscriber's plan (falls back to 0).
+     * Effective tax percentage for the subscriber's plan.
+     *
+     * Plans carry MANY tax rates via the `plan_tax_rate` pivot (the old
+     * `plans.tax_rate` column was dropped), so the percentage rates are summed.
+     * Only percentage rates are representable on a line item's `tax_rate`;
+     * fixed-amount taxes are a plan-level charge and are skipped here.
      */
     protected function resolveTaxRate(Subscriber $subscriber): float
     {
         $plan = $subscriber->plan;
-        return $plan?->tax_rate ?? 0.0;
+        if ($plan === null) {
+            return 0.0;
+        }
+
+        return round((float) $plan->taxes
+            ->where('type', '!=', 'fixed')
+            ->sum('rate'), 2);
     }
 
     /**

@@ -36,11 +36,21 @@ return new class extends Migration
 
         // Link plans to tax rates. The column was added in the earlier
         // tax migration; ensure it exists, then add the FK (tax_rates now exists).
+        //
+        // SQLite is deliberately excluded from the FK: it cannot drop a foreign
+        // key clause, so once `tax_rate_id` is removed by the later
+        // `plans_many_taxes_pivot` migration the table definition keeps a
+        // dangling FK and EVERY subsequent `ALTER TABLE plans DROP COLUMN`
+        // fails with "unknown column tax_rate_id in foreign key definition".
+        // The column itself is short-lived (replaced by the plan_tax_rate
+        // pivot), so skipping the constraint on SQLite costs nothing.
         Schema::table('plans', function (Blueprint $t) {
             if (!Schema::hasColumn('plans', 'tax_rate_id')) {
                 $t->unsignedBigInteger('tax_rate_id')->nullable();
             }
-            $t->foreign('tax_rate_id')->references('id')->on('tax_rates')->nullOnDelete();
+            if (config('database.default') !== 'sqlite') {
+                $t->foreign('tax_rate_id')->references('id')->on('tax_rates')->nullOnDelete();
+            }
         });
     }
 

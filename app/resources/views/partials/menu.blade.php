@@ -19,6 +19,9 @@
       ['label' => 'Audit Log', 'route' => '#', 'ready' => false],
     ],
     'Billing & Invoices' => [
+      ['label' => 'Invoices', 'route' => 'invoices.index', 'ready' => true],
+      ['label' => 'Payments', 'route' => 'payments.index', 'ready' => true],
+      ['label' => 'Ledger', 'route' => 'ledger.index', 'ready' => true],
       ['label' => 'Tax Rates', 'route' => 'tax-rates.index', 'ready' => true],
       ['label' => 'Plans', 'route' => 'plans.index', 'ready' => true],
       ['label' => 'Products & Services', 'route' => 'products.index', 'ready' => true],

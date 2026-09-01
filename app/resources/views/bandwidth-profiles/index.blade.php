@@ -3,11 +3,12 @@
   <h1>Bandwidth Control</h1>
   <a class="btn" href="{{ route('bandwidth-profiles.create') }}">+ New Bandwidth Profile</a>
   <table>
-    <thead><tr><th>Name</th><th>Download</th><th>Upload</th><th>VLAN</th><th>FUP (GB)</th><th>Interim (s)</th><th>Actions</th></tr></thead>
+    <thead><tr><th>Name</th><th>RADIUS Plan</th><th>Download</th><th>Upload</th><th>VLAN</th><th>FUP (GB)</th><th>Interim (s)</th><th>Actions</th></tr></thead>
     <tbody>
       @forelse ($profiles as $p)
         <tr>
           <td>{{ $p['name'] }}</td>
+          <td>{{ $p['radius_plan_id'] ?? '—' }}</td>
           <td>{{ $p['bandwidth_download_mbps'] }} Mbps</td>
           <td>{{ $p['bandwidth_upload_mbps'] }} Mbps</td>
           <td>{{ $p['vlan_id'] ?? '—' }}</td>
@@ -25,7 +26,7 @@
           </td>
         </tr>
       @empty
-        <tr><td colspan="7">No bandwidth profiles yet. Click <em>+ New Bandwidth Profile</em> to create one — it will sync to RADIUS.</td></tr>
+        <tr><td colspan="8">No bandwidth profiles yet. Click <em>+ New Bandwidth Profile</em> to create one — it will sync to RADIUS.</td></tr>
       @endforelse
     </tbody>
   </table>

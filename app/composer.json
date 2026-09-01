@@ -28,7 +28,8 @@
         "classmap": [
             "/home/msr/Pictures/radius_console/app/src",
             "/home/msr/Pictures/radius_console/app/Models",
-            "/home/msr/Pictures/radius_console/app/Providers"
+            "/home/msr/Pictures/radius_console/app/Providers",
+            "/home/msr/Pictures/radius_console/app/Services"
         ],
         "files": [
             "src/helpers.php",
