@@ -1,52 +1,109 @@
 @extends('layout', ['title' => 'New Plan'])
 @section('content')
-  <h1>New Plan</h1>
+  <div class="page-header">
+    <h1>New Plan</h1>
+    <p class="muted-label">Define a subscriber package with pricing, duration and bandwidth.</p>
+  </div>
+
   @if ($errors->any())
     <div class="alert alert-error">
       <ul>@foreach ($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
     </div>
   @endif
+
   <form method="POST" action="{{ route('plans.store') }}">
     @csrf
-    <label>Name <span class="req">*</span><input name="name" required placeholder="Home 50 Mbps"></label>
-    <label>Price <span class="req">*</span><input name="price" type="number" step="0.01" min="0" required placeholder="0.00"></label>
-    <label>Duration <span class="req">*</span>
-      <input name="duration" type="number" min="1" step="1" required value="{{ old('duration', 1) }}" placeholder="e.g. 30">
-    </label>
-    <label>Duration Unit <span class="req">*</span>
-      <select name="duration_unit">
-        @foreach (['days' => 'Days', 'months' => 'Months'] as $val => $label)
-          <option value="{{ $val }}" {{ old('duration_unit', 'months') === $val ? 'selected' : '' }}>{{ $label }}</option>
-        @endforeach
-      </select>
-    </label>
-    <label>Taxes (apply multiple or none)
-      <div class="tax-picker">
-        @foreach ($taxes as $tr)
-          @php $checked = in_array($tr->id, old('tax_rate_ids', [])); @endphp
-          <label class="tax-pill">
-            <input type="checkbox" name="tax_rate_ids[]" value="{{ $tr->id }}" {{ $checked ? 'checked' : '' }}>
-            <span class="dot"></span>
-            <span class="name">{{ $tr->name }}</span>
-            <span class="rate">({{ number_format($tr->rate, 2) }}{{ $tr->type === 'fixed' ? '' : '%' }})</span>
-          </label>
-        @endforeach
+
+    <div class="panel">
+      <div class="panel-body">
+        <h4 class="section-title">Plan Details</h4>
+        <div class="form-grid">
+
+          <div class="field col-3">
+            <label for="name">Name <em>*</em></label>
+            <input type="text" name="name" id="name" class="gui-input" required
+                   value="{{ old('name') }}" placeholder=" ">
+            <span class="hint">e.g. Home 50 Mbps</span>
+          </div>
+
+          <div class="field col-3">
+            <label for="price">Price <em>*</em></label>
+            <input type="number" name="price" id="price" class="gui-input" step="0.01" min="0" required
+                   value="{{ old('price') }}" placeholder=" ">
+          </div>
+
+          <div class="field col-3">
+            <label for="duration">Duration <em>*</em></label>
+            <input type="number" name="duration" id="duration" class="gui-input" min="1" step="1" required
+                   value="{{ old('duration', 1) }}" placeholder=" ">
+            <span class="hint">e.g. 30</span>
+          </div>
+
+          <div class="field col-3">
+            <label for="duration_unit">Duration Unit <em>*</em></label>
+            <select name="duration_unit" id="duration_unit" class="gui-input">
+              @foreach (['days' => 'Days', 'months' => 'Months'] as $val => $label)
+                <option value="{{ $val }}" @selected(old('duration_unit', 'months') === $val)>{{ $label }}</option>
+              @endforeach
+            </select>
+          </div>
+
+        </div>
       </div>
-      <span class="hint">Tick as many as apply. Leave all unticked for no tax.</span>
-    </label>
-    <div class="plan-total" aria-live="polite">
-      <span class="pt-label">Total (after tax)</span>
-      <span class="pt-amount" id="plan-total-amount">0.00</span>
-      <span class="pt-breakdown" id="plan-total-breakdown"></span>
     </div>
-    <label>Bandwidth Profile<select name="bandwidth_profile_id">
-      <option value="">— none —</option>
-      @foreach ($profiles as $bp)
-        <option value="{{ $bp->id }}">{{ $bp->name }} ({{ $bp->downloadMbps }}/{{ $bp->uploadMbps }} Mbps, {{ $bp->dataLimitGb ? number_format($bp->dataLimitGb, 0) . ' GB' : 'Unlimited' }})</option>
-      @endforeach
-    </select></label>
-    <label>Total Bandwidth (GB) <input name="data_limit_gb" type="number" min="0" step="1" value="{{ old('data_limit_gb', '') }}" placeholder="e.g. 500 (leave blank for unlimited)"></label>
-    <button class="btn" type="submit">Create Plan</button>
+
+    <div class="panel">
+      <div class="panel-body">
+        <h4 class="section-title">Taxes</h4>
+        <div class="tax-picker">
+          @foreach ($taxes as $tr)
+            @php $checked = in_array($tr->id, old('tax_rate_ids', [])); @endphp
+            <label class="tax-pill">
+              <input type="checkbox" name="tax_rate_ids[]" value="{{ $tr->id }}" {{ $checked ? 'checked' : '' }}>
+              <span class="dot"></span>
+              <span class="name">{{ $tr->name }}</span>
+              <span class="rate">({{ number_format($tr->rate, 2) }}{{ $tr->type === 'fixed' ? '' : '%' }})</span>
+            </label>
+          @endforeach
+        </div>
+        <span class="hint">Tick as many as apply. Leave all unticked for no tax.</span>
+        <div class="plan-total" aria-live="polite">
+          <span class="pt-label">Total (after tax)</span>
+          <span class="pt-amount" id="plan-total-amount">0.00</span>
+          <span class="pt-breakdown" id="plan-total-breakdown"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-body">
+        <h4 class="section-title">Bandwidth</h4>
+        <div class="form-grid">
+
+          <div class="field col-6">
+            <label for="bandwidth_profile_id">Bandwidth Profile</label>
+            <select name="bandwidth_profile_id" id="bandwidth_profile_id" class="gui-input">
+              <option value="">— none —</option>
+              @foreach ($profiles as $bp)
+                <option value="{{ $bp->id }}">{{ $bp->name }} ({{ $bp->downloadMbps }}/{{ $bp->uploadMbps }} Mbps, {{ $bp->dataLimitGb ? number_format($bp->dataLimitGb, 0) . ' GB' : 'Unlimited' }})</option>
+              @endforeach
+            </select>
+          </div>
+
+          <div class="field col-3">
+            <label for="data_limit_gb">Total Bandwidth (GB)</label>
+            <input type="number" name="data_limit_gb" id="data_limit_gb" class="gui-input" min="0" step="1"
+                   value="{{ old('data_limit_gb', '') }}" placeholder=" ">
+            <span class="hint">Leave blank for unlimited</span>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn" type="submit">Create Plan</button>
+    </div>
   </form>
 @endsection
 

@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="{{ asset('css/themes/tokens-light.css') }}">
   <link rel="stylesheet" href="{{ asset('css/themes/tokens-dark.css') }}">
   <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/forms.css') }}">
   <script src="{{ asset('js/theme-toggle.js') }}" defer></script>
   <script src="{{ asset('js/toast.js') }}" defer></script>
   @stack('styles')
