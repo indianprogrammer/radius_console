@@ -11,6 +11,8 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\QuoteController;
+use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\StaffGroupController;
 use App\Http\Controllers\SubscriberController;
@@ -178,6 +180,31 @@ Route::prefix('tickets')->name('tickets.')->group(function () {
     Route::post('/{id}/comment', [TicketController::class, 'comment'])->name('comment');
     Route::delete('/{ticket}/assignees/{staff}', [TicketController::class, 'removeAssignee'])
         ->name('assignees.destroy');
+});
+
+// Quotations & Proforma Invoices (Billing & Invoices). Both documents are the
+// same entity with a different `type`, so ONE named route group is defined and
+// the type is bound as the first parameter — hence the two url aliases below.
+// Neither is a receivable until `convert` produces a real invoice.
+Route::prefix('{type}')->name('quotes.')->whereIn('type', ['quotation', 'proforma'])->group(function () {
+    Route::get('/', [QuoteController::class, 'index'])->name('index');
+    Route::get('/create', [QuoteController::class, 'create'])->name('create');
+    Route::post('/', [QuoteController::class, 'store'])->name('store');
+    Route::get('/{id}', [QuoteController::class, 'show'])->name('show');
+    Route::get('/{id}/edit', [QuoteController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [QuoteController::class, 'update'])->name('update');
+    Route::delete('/{id}', [QuoteController::class, 'destroy'])->name('destroy');
+
+    // The only path that creates a receivable from a pre-sale document.
+    Route::post('/{id}/convert', [QuoteController::class, 'convert'])->name('convert');
+});
+
+// Tenant settings. One page per section; `{section}` is validated against
+// Setting::SCHEMA in the controller, so new sections need no route change.
+Route::prefix('settings')->name('settings.')->group(function () {
+    Route::get('/', [SettingController::class, 'index'])->name('index');
+    Route::get('/{section}', [SettingController::class, 'section'])->name('section');
+    Route::put('/{section}', [SettingController::class, 'update'])->name('update');
 });
 
 // Per-user theme preference persistence (best-effort, SRD §3.2).

@@ -202,7 +202,9 @@
           <div class="field col-2">
             <label class="switch-label">Auto Renew</label>
             <label class="switch">
-              <input type="checkbox" name="auto_renew" id="auto_renew" value="1" @checked($v('auto_renew'))>
+              {{-- Default comes from Settings > Subscribers; old() wins on redisplay. --}}
+              <input type="checkbox" name="auto_renew" id="auto_renew" value="1"
+                     @checked($v('auto_renew', \App\Models\Setting::bool('subscribers.auto_renew_default') ? '1' : ''))>
               <span data-on="Yes" data-off="No"></span>
             </label>
           </div>

@@ -14,10 +14,11 @@
       ['label' => 'Reports', 'route' => '#', 'ready' => false],
       ['label' => 'IPDR / Compliance', 'route' => '#', 'ready' => false, 'note' => 'Pending IPDR Server (#7) — IpdrClient adapter'],
       ['label' => 'Cron / Automation', 'route' => '#', 'ready' => false],
-      ['label' => 'Tenant Settings', 'route' => '#', 'ready' => false],
       ['label' => 'Audit Log', 'route' => '#', 'ready' => false],
     ],
     'Billing & Invoices' => [
+      ['label' => 'Quotations', 'route' => 'quotes.index', 'params' => 'quotation', 'ready' => true],
+      ['label' => 'Proforma Invoices', 'route' => 'quotes.index', 'params' => 'proforma', 'ready' => true],
       ['label' => 'Invoices', 'route' => 'invoices.index', 'ready' => true],
       ['label' => 'Payments', 'route' => 'payments.index', 'ready' => true],
       ['label' => 'Ledger', 'route' => 'ledger.index', 'ready' => true],
@@ -41,6 +42,21 @@
     'Radius Control' => [
       ['label' => 'Bandwidth Control', 'route' => 'bandwidth-profiles.index', 'ready' => true],
       ['label' => 'NAS', 'route' => 'nas.index', 'ready' => true],
+      // Standalone Settings section — see Setting::SCHEMA['radius'].
+      ['label' => 'RADIUS API', 'route' => 'settings.section', 'params' => 'radius', 'ready' => true],
+    ],
+    'Settings' => [
+      // Sits last, directly below Radius Control. Each item deep-links to a
+      // Settings section; they all share the "settings" route prefix, so the
+      // `params` key is what distinguishes the active one (see $renderItem).
+      // Order mirrors the tab strip on the Settings page.
+      ['label' => 'Company Profile', 'route' => 'settings.section', 'params' => 'profile', 'ready' => true],
+      ['label' => 'General', 'route' => 'settings.section', 'params' => 'general', 'ready' => true],
+      ['label' => 'Localization', 'route' => 'settings.section', 'params' => 'localization', 'ready' => true],
+      ['label' => 'Billing Settings', 'route' => 'settings.section', 'params' => 'billing', 'ready' => true],
+      ['label' => 'Tickets & SLA', 'route' => 'settings.section', 'params' => 'tickets', 'ready' => true],
+      ['label' => 'Notifications', 'route' => 'settings.section', 'params' => 'notifications', 'ready' => true],
+      ['label' => 'Subscriber Defaults', 'route' => 'settings.section', 'params' => 'subscribers', 'ready' => true],
     ],
   ];
   $active = request()->route()?->getName();
@@ -59,12 +75,31 @@
   }
   $activePrefix = menu_section_prefix($active);
 
+  // Several items can share one route name and differ only by a leading route
+  // parameter: every Settings section is `settings.section` and both quotation
+  // and proforma are `quotes.index`. When `params` is set, the item is active
+  // only if the request carries the same discriminator — otherwise all of them
+  // light up at once and their group reports itself open on unrelated pages
+  // (RADIUS API lives under Radius Control, not Settings).
+  //
+  // The discriminator is always the FIRST route parameter (`{section}`, `{type}`);
+  // matching on that rather than on any parameter avoids colliding with `{id}`.
+  $routeParams = request()->route()?->parameters() ?? [];
+  $activeParam = $routeParams ? (string) reset($routeParams) : null;
+
+  $isItemActive = function (array $it) use ($activePrefix, $activeParam): bool {
+    if (!$it['ready'] || !$activePrefix || $activePrefix !== menu_section_prefix($it['route'])) {
+      return false;
+    }
+    return !isset($it['params']) || $activeParam === $it['params'];
+  };
+
   // Render a single menu row.
-  $renderItem = function (array $it) use ($activePrefix) {
-    $isActive = ($it['ready'] && $activePrefix && $activePrefix === menu_section_prefix($it['route']));
+  $renderItem = function (array $it) use ($isItemActive) {
+    $isActive = $isItemActive($it);
     $liClass = trim(($it['ready'] ? '' : 'muted') . ' ' . ($isActive ? 'active' : ''));
     if ($it['ready']) {
-      $href = route($it['route']);
+      $href = route($it['route'], $it['params'] ?? []);
       $inner = '<span class="dot"></span><span class="label">' . e($it['label']) . '</span>';
       return '<li class="' . $liClass . '"><a href="' . $href . '">' . $inner . '</a></li>';
     }
@@ -83,8 +118,8 @@
       @endforeach
     @else
       @php
-        // A group is "open" if any child route is the current active route.
-        $groupOpen = collect($items)->contains(fn($it) => $it['ready'] && $activePrefix && $activePrefix === menu_section_prefix($it['route']));
+        // A group is "open" if one of its own items is the active one.
+        $groupOpen = collect($items)->contains($isItemActive);
       @endphp
       <li class="menu-group">
         <button type="button" class="group-toggle {{ $groupOpen ? 'open' : '' }}" data-group-toggle>

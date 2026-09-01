@@ -154,10 +154,24 @@ class Ticket extends Model
         };
     }
 
-    /** SLA due date for a priority, measured from now. */
-    public static function slaDueAt(string $priority): \DateTimeInterface
+    /**
+     * SLA due date for a priority, measured from now.
+     *
+     * The hours come from Settings > Tickets & SLA when a tenant has configured
+     * them; SLA_HOURS is the fallback for unknown priorities and for callers
+     * that have no tenant context.
+     */
+    public static function slaDueAt(string $priority, int|string|null $tenantId = null): \DateTimeInterface
     {
-        return now()->addHours(self::SLA_HOURS[$priority] ?? 48);
+        $fallback = self::SLA_HOURS[$priority] ?? 48;
+
+        if (!array_key_exists($priority, self::SLA_HOURS)) {
+            return now()->addHours($fallback);
+        }
+
+        $hours = Setting::int("tickets.sla_{$priority}_hours", $tenantId ?? tenant_id());
+
+        return now()->addHours($hours > 0 ? $hours : $fallback);
     }
 
     /**

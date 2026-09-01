@@ -2,6 +2,7 @@
 
 namespace App\Src\Adapters\Radius;
 
+use App\Models\Setting;
 use App\Src\Ports\RadiusClient;
 use Illuminate\Support\Facades\Http;
 
@@ -28,9 +29,20 @@ final class HttpRadiusAdapter implements RadiusClient
         private int $retries = 3,
         private int $retryDelayMs = 300,
     ) {
-        $this->baseUrl = $baseUrl ?? config('radius.base_url', 'http://127.0.0.1:8001/api');
+        // baseUrl is resolved lazily in baseUrl() — this adapter is a container
+        // SINGLETON, so reading the setting here would pin the URL for the whole
+        // process and a save on the RADIUS API page would need a restart.
         $this->apiUser = $apiUser ?? config('radius.username', 'manoj');
         $this->apiPass = $apiPass ?? config('radius.password', 'test1');
+    }
+
+    /**
+     * Effective base URL: an explicitly injected value (tests) wins, otherwise
+     * Settings > Radius Control > RADIUS API, falling back to config/env.
+     */
+    private function baseUrl(): string
+    {
+        return $this->baseUrl ?? Setting::radiusBaseUrl();
     }
 
     // ---- Auth -------------------------------------------------------------
@@ -40,7 +52,7 @@ final class HttpRadiusAdapter implements RadiusClient
             return $this->token;
         }
         $resp = Http::timeout($this->timeoutSec)
-            ->post($this->baseUrl . '/auth/login', [
+            ->post($this->baseUrl() . '/auth/login', [
                 'username' => $this->apiUser,
                 'password' => $this->apiPass,
             ]);
@@ -78,9 +90,9 @@ final class HttpRadiusAdapter implements RadiusClient
                 ->withToken($this->token())
                 ->acceptJson();
             $resp = match (strtoupper($method)) {
-                'GET' => $req->get($this->baseUrl . $path),
-                'DELETE' => $req->delete($this->baseUrl . $path),
-                default => $req->withBody(json_encode($body), 'application/json')->$method($this->baseUrl . $path),
+                'GET' => $req->get($this->baseUrl() . $path),
+                'DELETE' => $req->delete($this->baseUrl() . $path),
+                default => $req->withBody(json_encode($body), 'application/json')->$method($this->baseUrl() . $path),
             };
             if ($resp->status() === 401 && $attempt < $this->retries) {
                 $this->token = null; // force re-auth

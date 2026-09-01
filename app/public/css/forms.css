@@ -228,6 +228,8 @@ input[type="file"].gui-input { padding: .45rem .65rem; }
 /* ── Alerts ────────────────────────────────────────────────── */
 .alert { padding: .75rem 1rem; border-radius: 8px; margin-bottom: 1rem; }
 .alert-error { background: #fdecea; color: #c0392b; border: 1px solid #f5b7b1; }
+.alert-info { background: #d6eaf8; color: #1f618d; border: 1px solid #aed6f1; }
+.alert-info a { color: inherit; font-weight: 600; }
 .alert ul { margin: .25rem 0 0 1.25rem; }
 .alert ul li { margin-bottom: .15rem; }
 
@@ -235,6 +237,34 @@ input[type="file"].gui-input { padding: .45rem .65rem; }
 .btn-sm { padding: .3rem .55rem; font-size: .8rem; }
 .btn-danger { background: #c0392b; color: #fff; border: none; }
 .btn-danger:hover { background: #a93226; }
+
+/* ── Settings tab strip ────────────────────────────────────── */
+.settings-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem;
+  margin: 0 0 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+.settings-tab {
+  padding: .5rem .85rem;
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  /* Sit on the strip's border so the active tab visually joins the panel. */
+  margin-bottom: -1px;
+}
+.settings-tab:hover { color: var(--color-text); background: color-mix(in srgb, var(--color-primary) 6%, transparent); }
+.settings-tab.active {
+  color: var(--color-primary);
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  border-bottom: 1px solid var(--color-surface);
+}
 
 /* ─────────────────────────────────────────────────────────────
    Billing & Invoices listings (Invoices, Payments, Ledger)

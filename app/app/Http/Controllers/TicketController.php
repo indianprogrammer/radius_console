@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Franchise;
+use App\Models\Setting;
 use App\Models\Staff;
 use App\Models\StaffGroup;
 use App\Models\Subscriber;
@@ -72,7 +73,8 @@ final class TicketController extends Controller
             'ticket' => new Ticket([
                 'number'   => Ticket::nextNumber(tenant_id()),
                 'category' => 'fault',
-                'priority' => 'medium',
+                // Settings > Tickets & SLA supplies the default priority.
+                'priority' => Setting::get('tickets.default_priority'),
                 'status'   => 'open',
                 'source'   => 'phone',
             ]),
@@ -156,6 +158,21 @@ final class TicketController extends Controller
         unset($data['assignee_ids'], $data['assigned_staff_id'], $data['staff_group_id']);
 
         $previousStatus = $ticket->status;
+
+        // Settings > Tickets & SLA can require a resolution note before a
+        // ticket may be resolved or closed, so a closure always leaves a record
+        // of what was done.
+        $closing = in_array($data['status'], ['resolved', 'closed'], true)
+            && !in_array($previousStatus, ['resolved', 'closed'], true);
+
+        if ($closing
+            && Setting::bool('tickets.require_resolution_on_close')
+            && trim((string) ($data['resolution'] ?? $ticket->resolution)) === ''
+        ) {
+            return back()->withInput()->withErrors([
+                'resolution' => 'A resolution note is required to resolve or close a ticket.',
+            ]);
+        }
 
         // Resolution / closure timestamps follow the status.
         $data = $this->applyStatusTimestamps($data, $ticket);

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
+use App\Models\Setting;
 use App\Models\Subscriber;
 use Carbon\Carbon;
 
@@ -64,7 +65,10 @@ class InvoiceService
                 'subscriber_id' => $subscriber->id,
                 'number'        => $this->nextInvoiceNumber($subscriber->tenant_id),
                 'status'        => 'unpaid',
-                'due_date'      => Carbon::now()->addDays(15)->toDateString(),
+                // Payment terms come from Settings > Billing.
+                'due_date'      => Carbon::now()
+                    ->addDays(Setting::int('billing.invoice_due_days', $subscriber->tenant_id))
+                    ->toDateString(),
                 // `amount` is NOT NULL; seed the money columns at zero and let
                 // recomputeTotals() fill them once line items are attached.
                 'subtotal'      => 0,
@@ -140,11 +144,15 @@ class InvoiceService
         $taxAmt   = $items->sum('tax_amount');
         $grand    = round($subtotal + $taxAmt, 2);
 
+        // Settings > Billing decides whether the payable total is rounded up to
+        // the next whole unit (common for cash collection) or kept exact.
+        $roundUp = Setting::bool('billing.round_invoice_total', $invoice->tenant_id);
+
         $invoice->update([
             'subtotal'   => round($subtotal, 2),
             'tax_amount' => round($taxAmt, 2),
             'amount'     => $grand,
-            'total'      => ceil($grand),
+            'total'      => $roundUp ? ceil($grand) : $grand,
         ]);
     }
 
@@ -182,21 +190,27 @@ class InvoiceService
     }
 
     /**
-     * Auto-generate invoice number: INV-{YYYYMM}-{4-digit-seq}
+     * Auto-generate invoice number: {PREFIX}-{YYMM}-{4-digit-seq}
+     *
+     * The prefix comes from Settings > Billing; the running sequence is scoped
+     * to that prefix + month, so changing the prefix starts a fresh series
+     * instead of colliding with existing numbers.
      */
     protected function nextInvoiceNumber(int $tenantId): string
     {
-        $prefix = date('ym');
+        $settingPrefix = trim(Setting::get('billing.invoice_prefix', $tenantId)) ?: 'INV';
+        $month = date('ym');
+
         $last = Invoice::where('tenant_id', $tenantId)
-            ->where('number', 'like', "INV-{$prefix}-%")
+            ->where('number', 'like', "{$settingPrefix}-{$month}-%")
             ->orderByDesc('number')
             ->first();
 
         $seq = 1;
-        if ($last && preg_match('/INV-\d+-(\d+)/', $last->number, $m)) {
+        if ($last && preg_match('/-(\d+)$/', $last->number, $m)) {
             $seq = ((int) $m[1]) + 1;
         }
 
-        return sprintf('INV-%s-%04d', $prefix, $seq);
+        return sprintf('%s-%s-%04d', $settingPrefix, $month, $seq);
     }
 }
