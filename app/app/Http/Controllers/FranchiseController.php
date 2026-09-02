@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Franchise;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 /**
@@ -59,6 +62,7 @@ final class FranchiseController extends Controller
                 'status'          => 'active',
             ]),
             'parents' => $this->parents(),
+            'loginUser' => null,
         ]);
     }
 
@@ -72,7 +76,19 @@ final class FranchiseController extends Controller
         // Opening balance seeds the wallet; afterwards it is system-maintained.
         $data['balance'] = (float) ($data['balance'] ?? 0);
 
-        $franchise = Franchise::create($data);
+        $franchise = DB::transaction(function () use ($data) {
+            $loginUsername = $data['login_username'] ?? null;
+            $loginPassword = $data['login_password'] ?? null;
+            unset($data['login_username'], $data['login_password']);
+
+            $franchise = Franchise::create($data);
+
+            if ($loginUsername) {
+                $this->saveLogin($franchise, $loginUsername, $loginPassword);
+            }
+
+            return $franchise;
+        });
 
         return redirect()->route('franchises.index')
             ->with('status', "Franchise {$franchise->code} created.");
@@ -85,6 +101,7 @@ final class FranchiseController extends Controller
         return view('franchises.edit', [
             'franchise' => $franchise,
             'parents'   => $this->parents($franchise->id),
+            'loginUser' => User::where('franchise_id', $franchise->id)->first(),
         ]);
     }
 
@@ -96,7 +113,17 @@ final class FranchiseController extends Controller
         // The wallet balance is never taken from the edit form.
         unset($data['balance']);
 
-        $franchise->update($data);
+        DB::transaction(function () use ($franchise, $data) {
+            $loginUsername = $data['login_username'] ?? null;
+            $loginPassword = $data['login_password'] ?? null;
+            unset($data['login_username'], $data['login_password']);
+
+            $franchise->update($data);
+
+            if ($loginUsername || $loginPassword) {
+                $this->saveLogin($franchise, $loginUsername, $loginPassword);
+            }
+        });
 
         return redirect()->route('franchises.index')
             ->with('status', "Franchise {$franchise->code} updated.");
@@ -131,6 +158,10 @@ final class FranchiseController extends Controller
      */
     private function validateData(Request $request, ?int $ignoreId = null): array
     {
+        $loginUserId = $ignoreId
+            ? User::where('franchise_id', $ignoreId)->value('id')
+            : null;
+
         return $request->validate([
             'code' => [
                 'nullable', 'string', 'max:40',
@@ -161,7 +192,46 @@ final class FranchiseController extends Controller
             'balance'         => 'nullable|numeric',
             'status'          => 'required|in:' . implode(',', array_keys(Franchise::STATUSES)),
             'notes'           => 'nullable|string|max:1000',
+            'login_username'  => [
+                'nullable', 'string', 'min:3', 'max:80',
+                'required_with:login_password',
+                Rule::unique('users', 'username')->ignore($loginUserId),
+            ],
+            'login_password'  => 'nullable|string|min:8|required_with:login_username',
         ]);
+    }
+
+    /** Create or update the linked login without ever storing plaintext. */
+    private function saveLogin(Franchise $franchise, ?string $username, ?string $password): void
+    {
+        $login = User::where('franchise_id', $franchise->id)->first();
+        $username = $username ?: $login?->username;
+
+        if (!$username) {
+            return;
+        }
+
+        $attributes = [
+            'tenant_id' => $franchise->tenant_id,
+            'franchise_id' => $franchise->id,
+            'name' => $franchise->name . ' Login',
+            'username' => $username,
+            'email' => $login?->email ?: $username . '@' . (view()->shared('tenant')->slug ?? 'tenant') . '.local',
+            'role' => 'franchise',
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ];
+
+        if ($password) {
+            $attributes['password'] = Hash::make($password);
+        }
+
+        if ($login) {
+            $login->forceFill($attributes)->save();
+        } else {
+            // Creation always validates a password when a username is supplied.
+            User::create($attributes + ['password' => Hash::make($password)]);
+        }
     }
 
     /** Franchises selectable as a parent (excluding the one being edited). */

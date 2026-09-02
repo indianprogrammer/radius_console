@@ -63,6 +63,31 @@
 
 <div class="panel">
   <div class="panel-body">
+    <h4 class="section-title">Franchise Login</h4>
+    <p class="hint">
+      @if ($isEdit && $loginUser)
+        Login username is <strong>{{ $loginUser->username }}</strong>. Leave password blank to keep it unchanged.
+      @else
+        Set credentials here so this franchise can sign in to the console. Both fields are required to create a login.
+      @endif
+    </p>
+    <div class="form-grid">
+      <div class="field col-6">
+        <label for="login_username">Login Username</label>
+        <input type="text" name="login_username" id="login_username" class="gui-input" minlength="3" maxlength="80"
+               value="{{ old('login_username', $loginUser->username ?? '') }}" placeholder=" " autocomplete="username">
+      </div>
+      <div class="field col-6">
+        <label for="login_password">{{ $isEdit && $loginUser ? 'New Password' : 'Login Password' }}</label>
+        <input type="password" name="login_password" id="login_password" class="gui-input" minlength="8" maxlength="255"
+               placeholder=" " autocomplete="new-password">
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-body">
     <h4 class="section-title">Contact</h4>
     <div class="form-grid">
 
