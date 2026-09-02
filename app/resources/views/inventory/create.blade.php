@@ -36,10 +36,9 @@
           <div class="field col-3">
             <label for="category">Category <em>*</em></label>
             <select name="category" id="category" class="gui-input" required>
-              <option value="physical" @selected(old('category', 'physical') === 'physical')>Physical</option>
-              <option value="digital" @selected(old('category') === 'digital')>Digital</option>
-              <option value="service" @selected(old('category') === 'service')>Service</option>
-              <option value="accessory" @selected(old('category') === 'accessory')>Accessory</option>
+              @foreach (\App\Models\Inventory::CATEGORIES as $val => $label)
+                <option value="{{ $val }}" @selected(old('category', 'physical') === $val)>{{ $label }}</option>
+              @endforeach
             </select>
           </div>
 

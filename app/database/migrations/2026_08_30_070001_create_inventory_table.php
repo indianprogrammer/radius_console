@@ -2,8 +2,19 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * Stock items — Billing & Invoices.
+ *
+ * Deliberately separate from `products`: a product is a priced catalogue entry
+ * used on invoices, whereas an inventory row tracks a countable quantity with a
+ * reorder threshold and a cost/sale spread. Merging them would put nullable
+ * stock columns on every service line.
+ *
+ * Table is the singular `inventory` (see Inventory::$table).
+ */
 return new class extends Migration
 {
     public function up(): void
@@ -11,7 +22,7 @@ return new class extends Migration
         Schema::create('inventory', function (Blueprint $t) {
             $t->id();
             $t->foreignId('tenant_id')->constrained()->cascadeOnDelete();
-            $t->string('sku', 100)->unique();
+            $t->string('sku', 100);
             $t->string('name', 200);
             $t->text('description')->nullable();
             $t->enum('category', ['physical', 'digital', 'service', 'accessory'])->default('physical');
@@ -24,13 +35,23 @@ return new class extends Migration
             $t->unsignedInteger('sort_order')->default(0);
             $t->timestamps();
 
+            // Per-tenant, not global: two tenants may legitimately use the same SKU.
+            $t->unique(['tenant_id', 'sku']);
             $t->index(['tenant_id', 'category', 'is_active']);
-            $t->index(['tenant_id', 'sku']);
         });
+
+        if (config('database.default') === 'pgsql') {
+            DB::statement('ALTER TABLE inventory ENABLE ROW LEVEL SECURITY');
+            DB::statement("CREATE POLICY tenant_isolation_inventory ON inventory USING (tenant_id = current_setting('app.current_tenant')::bigint)");
+        }
     }
 
     public function down(): void
     {
+        if (config('database.default') === 'pgsql') {
+            DB::statement('DROP POLICY IF EXISTS tenant_isolation_inventory ON inventory');
+        }
+
         Schema::dropIfExists('inventory');
     }
 };

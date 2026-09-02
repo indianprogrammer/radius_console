@@ -1,142 +1,111 @@
-@extends('layout', ['title' => 'Inventory Management'])
+@extends('layout', ['title' => 'Inventory'])
 @section('content')
-  <h1>Inventory Management</h1>
-  <a class="btn" href="{{ route('inventory.create') }}">+ New Inventory Item</a>
+  <div class="page-header">
+    <h1>Inventory</h1>
+    <p class="muted-label">Stock items with reorder thresholds and cost / sale pricing.</p>
+  </div>
+
+  <div class="stat-cards">
+    <div class="stat-card">
+      <span class="sc-label">Items</span>
+      <span class="sc-value">{{ $totals['total'] }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="sc-label">Active</span>
+      <span class="sc-value sc-ok">{{ $totals['active'] }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="sc-label">Low Stock</span>
+      <span class="sc-value {{ $totals['low'] > 0 ? 'sc-bad' : 'sc-ok' }}">{{ $totals['low'] }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="sc-label">Stock Value (cost)</span>
+      <span class="sc-value">{{ number_format($totals['value'], 2) }}</span>
+    </div>
+  </div>
+
+  <a class="btn" href="{{ route('inventory.create') }}">+ New Item</a>
+  <a class="btn" href="{{ route('products.index') }}">Products &amp; Services</a>
+
   <form class="search-form" method="get" action="{{ route('inventory.index') }}">
-    <input type="text" name="q" value="{{ $search ?? '' }}" placeholder="Search name or SKU…">
+    <input type="text" name="q" value="{{ $search ?? '' }}" placeholder="Search SKU, name or description…">
     <select name="category">
       <option value="">All Categories</option>
-      <option value="physical" @selected(($category ?? '') === 'physical')>Physical</option>
-      <option value="digital" @selected(($category ?? '') === 'digital')>Digital</option>
-      <option value="service" @selected(($category ?? '') === 'service')>Service</option>
-      <option value="accessory" @selected(($category ?? '') === 'accessory')>Accessory</option>
+      @foreach (\App\Models\Inventory::CATEGORIES as $val => $label)
+        <option value="{{ $val }}" @selected(($category ?? '') === $val)>{{ $label }}</option>
+      @endforeach
     </select>
-    <label style="display:flex;align-items:center;gap:.5rem;margin-top:.5rem">
-      <input type="checkbox" name="low_stock" value="1" {{ $lowStock ? 'checked' : '' }}>
-      Low Stock Only
-    </label>
+    <select name="status">
+      <option value="">All Statuses</option>
+      <option value="active" @selected(($status ?? '') === 'active')>Active</option>
+      <option value="inactive" @selected(($status ?? '') === 'inactive')>Inactive</option>
+    </select>
+    <select name="low_stock">
+      <option value="">All Stock Levels</option>
+      <option value="1" @selected($lowStock)>Low stock only</option>
+    </select>
     <button type="submit" class="btn">Search</button>
-    @if ($search || $category || $lowStock)
+    @if ($search || $category || $status || $lowStock)
       <a href="{{ route('inventory.index') }}" class="btn">Clear</a>
     @endif
   </form>
-  @if (session('status'))
-    <div class="alert alert-success">{{ session('status') }}</div>
-  @endif
 
-  <div class="inventory-grid">
-    @forelse ($items as $i)
-      <div class="inventory-card {{ $i->stock_quantity <= $i->reorder_point ? 'low-stock' : '' }}">
-        <div class="card-header">
-          <h3>{{ $i->name }}</h3>
-          <span class="sku">{{ $i->sku }}</span>
-        </div>
-        <div class="card-body">
-          <p class="description">{{ $i->description ?? 'No description' }}</p>
-          <div class="stats">
-            <div class="stat">
-              <label>Category:</label>
-              <span class="category">{{ ucfirst($i->category) }}</span>
-            </div>
-            <div class="stat">
-              <label>Stock:</label>
-              <span class="stock">{{ number_format($i->stock_quantity, 2) }} {{ $i->unit }}</span>
-            </div>
-            <div class="stat">
-              <label>Reorder Point:</label>
-              <span>{{ number_format($i->reorder_point, 2) }} {{ $i->unit }}</span>
-            </div>
-            <div class="stat price">
-              <label>Cost:</label>
-              <span class="cost">${{ number_format($i->cost_price, 2) }}</span>
-            </div>
-            <div class="stat price">
-              <label>Sale:</label>
-              <span class="sale">${{ number_format($i->sale_price, 2) }}</span>
-            </div>
-          </div>
-        </div>
-        <div class="card-footer">
-          <button class="btn" onclick="window.location.href='{{ route('inventory.edit', $i->id) }}'">Edit</button>
-          <button class="btn danger" onclick="deleteItem(event, '{{ route('inventory.destroy', $i->id) }}')">Delete</button>
-        </div>
-      </div>
-    @empty
-      <div class="no-items">No inventory items found.</div>
-    @endforelse
-  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>SKU</th>
+        <th>Name</th>
+        <th>Category</th>
+        <th class="num">In Stock</th>
+        <th class="num">Reorder At</th>
+        <th class="num">Cost</th>
+        <th class="num">Sale</th>
+        <th>Stock</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      @forelse ($items as $i)
+        <tr>
+          <td>{{ $i->sku }}</td>
+          <td>
+            {{ $i->name }}
+            @if ($i->description)<div class="muted-label">{{ Str::limit($i->description, 60) }}</div>@endif
+          </td>
+          <td>{{ $i->categoryLabel() }}</td>
+          <td class="num">{{ number_format($i->stock_quantity, 2) }} {{ $i->unit }}</td>
+          <td class="num">{{ number_format($i->reorder_point, 2) }}</td>
+          <td class="num">{{ number_format($i->cost_price, 2) }}</td>
+          <td class="num">{{ number_format($i->sale_price, 2) }}</td>
+          <td>
+            <span class="pill pill-{{ $i->isOutOfStock() ? 'failed' : ($i->isLowStock() ? 'overdue' : 'paid') }}">
+              {{ $i->isOutOfStock() ? 'Out of stock' : ($i->isLowStock() ? 'Low' : 'OK') }}
+            </span>
+          </td>
+          <td>
+            <span class="pill pill-{{ $i->is_active ? 'paid' : 'void' }}">
+              {{ $i->is_active ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+          <td>
+            <button class="btn" onclick="window.location.href='{{ route('inventory.edit', $i->id) }}'">Edit</button>
+            <button class="btn danger" onclick="deleteInventoryItem(event, '{{ route('inventory.destroy', $i->id) }}')">Delete</button>
+          </td>
+        </tr>
+      @empty
+        <tr><td colspan="10">No inventory items yet. Click <em>+ New Item</em> to add stock.</td></tr>
+      @endforelse
+    </tbody>
+  </table>
+
   @include('partials.pager', ['paginator' => $items])
-
-  <style>
-    .inventory-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 1rem;
-      margin-top: 1rem;
-    }
-    .inventory-card {
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 1rem;
-      background: white;
-      transition: transform 0.2s;
-    }
-    .inventory-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    .inventory-card.low-stock {
-      border-color: #dc3545;
-      background: #fff5f5;
-    }
-    .card-header {
-      margin-bottom: 0.5rem;
-    }
-    .card-header h3 {
-      margin: 0 0 0.25rem 0;
-      font-size: 1.1rem;
-    }
-    .sku {
-      font-size: 0.85rem;
-      color: #666;
-    }
-    .description {
-      margin: 0.5rem 0;
-      color: #555;
-      font-size: 0.9rem;
-    }
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 0.5rem;
-      margin: 0.5rem 0;
-    }
-    .stat {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.85rem;
-    }
-    .stat label {
-      font-weight: 600;
-      color: #333;
-    }
-    .card-footer {
-      margin-top: 1rem;
-      display: flex;
-      gap: 0.5rem;
-    }
-    .no-items {
-      text-align: center;
-      padding: 2rem;
-      color: #666;
-      font-style: italic;
-    }
-  </style>
+  @include('partials.per-page', ['paginator' => $items, 'action' => route('inventory.index')])
 
   <script>
-    function deleteItem(event, url) {
+    function deleteInventoryItem(event, url) {
       if (!confirm('Delete this inventory item?')) return;
-      const card = event.currentTarget.closest('.inventory-card');
+      const row = event.currentTarget.closest('tr');
       fetch(url, {
         method: 'DELETE',
         headers: {
@@ -145,7 +114,7 @@
         }
       }).then(response => {
         if (response.ok) {
-          if (card) card.remove();
+          if (row) row.remove();
           window.toast && window.toast('Inventory item deleted.', 'success');
         } else {
           window.toast && window.toast('Failed to delete.', 'error');
