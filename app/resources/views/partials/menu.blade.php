@@ -31,6 +31,13 @@
       ['label' => 'Franchise', 'route' => 'franchises.index', 'ready' => true],
       ['label' => 'Branch', 'route' => 'branch.index', 'ready' => false],
     ],
+    'Sales' => [
+      // SRD §5.0 #7 "Leads". All three entries are the same `leads.index`
+      // route with a different query filter, so they share one menu section.
+      ['label' => 'Leads', 'route' => 'leads.index', 'ready' => true],
+      ['label' => 'Follow-ups Due', 'route' => 'leads.index', 'query' => ['due' => 1], 'ready' => true],
+      ['label' => 'Open Pipeline', 'route' => 'leads.index', 'query' => ['open' => 1], 'ready' => true],
+    ],
     'Staff & HR' => [
       ['label' => 'Staff', 'route' => 'staff.index', 'ready' => true],
       ['label' => 'Teams / Groups', 'route' => 'staff-groups.index', 'ready' => true],
@@ -76,6 +83,22 @@
   }
   $activePrefix = menu_section_prefix($active);
 
+  // Menu items may share a route name and differ only by a QUERY flag — all
+  // three Sales entries are `leads.index`, filtered by `due` / `open`. Collect
+  // the flags used per route section so the unfiltered entry can be told apart
+  // from the filtered ones (otherwise "Leads" lights up on every Sales view).
+  $menuQueryKeys = [];
+  foreach ($groups as $groupItems) {
+    foreach ($groupItems as $it) {
+      if (!empty($it['query'])) {
+        $section = menu_section_prefix($it['route']);
+        $menuQueryKeys[$section] = array_unique(array_merge(
+          $menuQueryKeys[$section] ?? [], array_keys($it['query'])
+        ));
+      }
+    }
+  }
+
   // Several items can share one route name and differ only by a leading route
   // parameter: every Settings section is `settings.section` and both quotation
   // and proforma are `quotes.index`. When `params` is set, the item is active
@@ -88,11 +111,28 @@
   $routeParams = request()->route()?->parameters() ?? [];
   $activeParam = $routeParams ? (string) reset($routeParams) : null;
 
-  $isItemActive = function (array $it) use ($activePrefix, $activeParam): bool {
+  $isItemActive = function (array $it) use ($activePrefix, $activeParam, $menuQueryKeys): bool {
     if (!$it['ready'] || !$activePrefix || $activePrefix !== menu_section_prefix($it['route'])) {
       return false;
     }
-    return !isset($it['params']) || $activeParam === $it['params'];
+    if (isset($it['params']) && $activeParam !== $it['params']) {
+      return false;
+    }
+
+    // Query-flag siblings (see $menuQueryKeys): an item carrying `query` is
+    // active only when every pair matches the request; the plain entry is
+    // active only when NONE of its siblings' flags are set.
+    foreach ($menuQueryKeys[menu_section_prefix($it['route'])] ?? [] as $key) {
+      $want = $it['query'][$key] ?? null;
+      $have = request()->query($key);
+      $set = $have !== null && $have !== '' && $have !== '0';
+
+      if ($want === null ? $set : !$set || (string) $have !== (string) $want) {
+        return false;
+      }
+    }
+
+    return true;
   };
 
   // Render a single menu row.
@@ -100,7 +140,13 @@
     $isActive = $isItemActive($it);
     $liClass = trim(($it['ready'] ? '' : 'muted') . ' ' . ($isActive ? 'active' : ''));
     if ($it['ready']) {
-      $href = route($it['route'], $it['params'] ?? []);
+      // `params` is a positional route parameter, `query` a query string; an
+      // item may carry either or both.
+      $args = $it['params'] ?? [];
+      if (!empty($it['query'])) {
+        $args = array_merge(is_array($args) ? $args : [$args], $it['query']);
+      }
+      $href = route($it['route'], $args);
       $inner = '<span class="dot"></span><span class="label">' . e($it['label']) . '</span>';
       return '<li class="' . $liClass . '"><a href="' . $href . '">' . $inner . '</a></li>';
     }

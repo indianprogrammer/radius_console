@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FranchiseController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\LeadController;
 use App\Http\Controllers\LedgerController;
 use App\Http\Controllers\NasController;
 use App\Http\Controllers\PaymentController;
@@ -90,6 +91,25 @@ Route::prefix('inventory')->name('inventory.')->group(function () {
     Route::get('/{id}/edit', [InventoryController::class, 'edit'])->name('edit');
     Route::put('/{id}', [InventoryController::class, 'update'])->name('update');
     Route::delete('/{id}', [InventoryController::class, 'destroy'])->name('destroy');
+});
+
+// Sales pipeline / leads (Sales). Stage changes, follow-ups and the
+// quote hand-off are POST actions of their own so LeadService owns every
+// transition and the `lead_activities` trail is always written.
+Route::prefix('leads')->name('leads.')->group(function () {
+    Route::get('/', [LeadController::class, 'index'])->name('index');
+    Route::get('/create', [LeadController::class, 'create'])->name('create');
+    Route::post('/', [LeadController::class, 'store'])->name('store');
+    Route::get('/{id}', [LeadController::class, 'show'])->name('show');
+    Route::get('/{id}/edit', [LeadController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [LeadController::class, 'update'])->name('update');
+    Route::delete('/{id}', [LeadController::class, 'destroy'])->name('destroy');
+
+    Route::post('/{id}/activity', [LeadController::class, 'activity'])->name('activity');
+    Route::post('/{id}/follow-up', [LeadController::class, 'followUp'])->name('follow-up');
+    Route::post('/{id}/quote', [LeadController::class, 'quote'])->name('quote');
+    Route::post('/{id}/win', [LeadController::class, 'win'])->name('win');
+    Route::post('/{id}/lose', [LeadController::class, 'lose'])->name('lose');
 });
 
 // Invoices (managed under Billing & Invoices). Generated from a subscriber's
