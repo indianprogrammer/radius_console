@@ -5,6 +5,7 @@ use App\Http\Controllers\BandwidthProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FranchiseController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\LedgerController;
 use App\Http\Controllers\NasController;
 use App\Http\Controllers\PaymentController;
@@ -79,6 +80,16 @@ Route::prefix('products')->name('products.')->group(function () {
     Route::get('/{id}/edit', [ProductController::class, 'edit'])->name('edit');
     Route::put('/{id}', [ProductController::class, 'update'])->name('update');
     Route::delete('/{id}', [ProductController::class, 'destroy'])->name('destroy');
+});
+
+// Inventory (managed under Billing & Invoices).
+Route::prefix('inventory')->name('inventory.')->group(function () {
+    Route::get('/', [InventoryController::class, 'index'])->name('index');
+    Route::get('/create', [InventoryController::class, 'create'])->name('create');
+    Route::post('/', [InventoryController::class, 'store'])->name('store');
+    Route::get('/{id}/edit', [InventoryController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [InventoryController::class, 'update'])->name('update');
+    Route::delete('/{id}', [InventoryController::class, 'destroy'])->name('destroy');
 });
 
 // Invoices (managed under Billing & Invoices). Generated from a subscriber's

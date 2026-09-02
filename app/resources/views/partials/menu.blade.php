@@ -25,6 +25,7 @@
       ['label' => 'Tax Rates', 'route' => 'tax-rates.index', 'ready' => true],
       ['label' => 'Plans', 'route' => 'plans.index', 'ready' => true],
       ['label' => 'Products & Services', 'route' => 'products.index', 'ready' => true],
+      ['label' => 'Inventory', 'route' => 'inventory.index', 'ready' => true],
     ],
     'Franchise Management' => [
       ['label' => 'Franchise', 'route' => 'franchises.index', 'ready' => true],
