@@ -39,6 +39,7 @@
   </div>
 
   <a class="btn" href="{{ route('leads.create') }}">+ New Lead</a>
+  <a class="btn" href="{{ route('leads.board') }}">Pipeline Board</a>
   <a class="btn" href="{{ route('leads.index', ['due' => 1]) }}">Follow-ups Due</a>
   <a class="btn" href="{{ route('leads.index', ['unassigned' => 1]) }}">Unassigned</a>
 

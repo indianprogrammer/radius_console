@@ -32,8 +32,9 @@
       ['label' => 'Branch', 'route' => 'branch.index', 'ready' => false],
     ],
     'Sales' => [
-      // SRD §5.0 #7 "Leads". All three entries are the same `leads.index`
-      // route with a different query filter, so they share one menu section.
+      // SRD §5.0 #7 "Leads". The list entries are the same `leads.index` route
+      // with a different query filter, so they share one menu section.
+      ['label' => 'Pipeline Board', 'route' => 'leads.board', 'ready' => true],
       ['label' => 'Leads', 'route' => 'leads.index', 'ready' => true],
       ['label' => 'Follow-ups Due', 'route' => 'leads.index', 'query' => ['due' => 1], 'ready' => true],
       ['label' => 'Open Pipeline', 'route' => 'leads.index', 'query' => ['open' => 1], 'ready' => true],
@@ -83,11 +84,16 @@
   }
   $activePrefix = menu_section_prefix($active);
 
-  // Menu items may share a route name and differ only by a QUERY flag — all
-  // three Sales entries are `leads.index`, filtered by `due` / `open`. Collect
-  // the flags used per route section so the unfiltered entry can be told apart
-  // from the filtered ones (otherwise "Leads" lights up on every Sales view).
+  // Menu items may share a route name and differ only by a QUERY flag — the
+  // Sales list entries are all `leads.index`, filtered by `due` / `open`.
+  // Collect the flags used per route section so the unfiltered entry can be
+  // told apart from the filtered ones (otherwise "Leads" lights up on every
+  // Sales view).
   $menuQueryKeys = [];
+  // Route names claimed by a SPECIFIC item rather than a section's list, e.g.
+  // `leads.board`. Prefix matching (which exists so create/edit highlight their
+  // parent list) would otherwise light up "Leads" on the board too.
+  $menuExactRoutes = [];
   foreach ($groups as $groupItems) {
     foreach ($groupItems as $it) {
       if (!empty($it['query'])) {
@@ -95,6 +101,9 @@
         $menuQueryKeys[$section] = array_unique(array_merge(
           $menuQueryKeys[$section] ?? [], array_keys($it['query'])
         ));
+      }
+      if ($it['ready'] && !str_ends_with($it['route'], '.index')) {
+        $menuExactRoutes[] = $it['route'];
       }
     }
   }
@@ -111,10 +120,21 @@
   $routeParams = request()->route()?->parameters() ?? [];
   $activeParam = $routeParams ? (string) reset($routeParams) : null;
 
-  $isItemActive = function (array $it) use ($activePrefix, $activeParam, $menuQueryKeys): bool {
+  $isItemActive = function (array $it) use ($active, $activePrefix, $activeParam, $menuQueryKeys, $menuExactRoutes): bool {
     if (!$it['ready'] || !$activePrefix || $activePrefix !== menu_section_prefix($it['route'])) {
       return false;
     }
+
+    // A route claimed by a specific item (e.g. `leads.board`) matches by NAME,
+    // not by prefix: otherwise the section's list entry ("Leads") would light
+    // up on the board too, and the board entry would light up on every lead
+    // page. Required in both directions, hence the || .
+    if (in_array($it['route'], $menuExactRoutes, true) || in_array($active, $menuExactRoutes, true)) {
+      if ($it['route'] !== $active) {
+        return false;
+      }
+    }
+
     if (isset($it['params']) && $activeParam !== $it['params']) {
       return false;
     }

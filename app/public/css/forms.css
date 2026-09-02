@@ -336,6 +336,113 @@ th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; white-sp
 /* A select driven by another control (e.g. subscriber locked by invoice). */
 .gui-input.is-locked { opacity: .7; cursor: not-allowed; }
 
+/* Label available to screen readers where a visible one would be noise. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Kanban board (Sales > Pipeline Board)
+   ───────────────────────────────────────────────────────────── */
+
+/* Horizontal scroller: columns keep a usable width instead of squeezing to
+   nothing as stages are added. */
+.board {
+  display: flex;
+  gap: .75rem;
+  align-items: flex-start;
+  overflow-x: auto;
+  padding-bottom: .75rem;
+  margin-top: 1rem;
+}
+.board-col {
+  flex: 0 0 17rem;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+}
+.board-col-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: .35rem;
+  padding: .6rem .7rem;
+  border-bottom: 1px solid var(--color-border);
+}
+.board-col-title { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.board-col-count {
+  font-size: .7rem;
+  font-weight: 700;
+  padding: .05rem .4rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+  color: var(--color-primary);
+}
+.board-col-value {
+  width: 100%;
+  font-size: .72rem;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+/* min-height keeps an empty column a valid drop target. */
+.board-col-body { padding: .55rem; display: flex; flex-direction: column; gap: .5rem; min-height: 4.5rem; }
+.board-col.is-drop-target { border-color: var(--color-primary); }
+.board-col.is-drop-target .board-col-body { background: color-mix(in srgb, var(--color-primary) 7%, transparent); }
+.board-col-empty { font-size: .75rem; color: var(--color-text-muted); text-align: center; padding: .75rem .25rem; }
+
+.board-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-border);
+  border-radius: 8px;
+  padding: .55rem .6rem;
+  box-shadow: var(--shadow);
+}
+.board-card:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 1px; }
+.board-card.is-dragging { opacity: .45; }
+/* Rating stripe: the left edge answers "who do I call first?" at a glance. */
+.board-card.rating-hot  { border-left-color: #c0392b; }
+.board-card.rating-warm { border-left-color: #d97706; }
+.board-card.rating-cold { border-left-color: #1f618d; }
+
+.board-card-top { display: flex; align-items: baseline; justify-content: space-between; gap: .4rem; }
+.board-card-num { font-size: .7rem; color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
+/* The grip is the ONLY drag handle — see the board view for the reasoning. */
+.board-card-grip { cursor: grab; color: var(--color-text-muted); font-size: .9rem; line-height: 1; padding: 0 .15rem; touch-action: none; }
+.board-card-grip:active { cursor: grabbing; }
+.board-card-name { display: block; font-size: .86rem; font-weight: 600; margin: .15rem 0 .1rem; }
+.board-card-company,
+.board-card-meta { font-size: .72rem; color: var(--color-text-muted); }
+.board-card-meta { display: flex; flex-wrap: wrap; gap: .3rem .5rem; margin-top: .3rem; }
+.board-card-value { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--color-text); }
+.board-card-pills { margin-top: .35rem; }
+.board-card-foot { display: flex; align-items: center; gap: .35rem; margin-top: .45rem; }
+.board-card-foot .gui-input {
+  flex: 1;
+  padding: .25rem .4rem;
+  font-size: .72rem;
+  min-height: 0;
+}
+.board-card-foot .btn { padding: .25rem .5rem; font-size: .72rem; }
+
+@media (max-width: 768px) {
+  /* Stack the columns: a horizontal scroller inside a narrow viewport hides
+     most of the pipeline behind a gesture. */
+  .board { flex-direction: column; overflow-x: visible; }
+  .board-col { flex: 1 1 auto; width: 100%; }
+}
+
 /* ── Responsive Breakpoints ────────────────────────────────── */
 @media (max-width: 1280px) {
   .panel-body .form-grid { grid-template-columns: repeat(4, 1fr); }

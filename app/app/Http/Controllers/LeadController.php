@@ -74,6 +74,97 @@ final class LeadController extends Controller
         ]);
     }
 
+    /**
+     * Kanban board of the OPEN pipeline — the "what is still in play" view.
+     *
+     * Deliberately unpaginated and closed-lead-free: a board is read as a whole,
+     * and a won/lost lead is history that would only widen the columns. Cards
+     * carry their own stage `<select>` beside the drag handle, because native
+     * HTML5 drag-and-drop is not reachable by keyboard.
+     */
+    public function board(Request $request)
+    {
+        $leads = Lead::query()
+            ->where('tenant_id', tenant_id())
+            ->whereNotIn('status', Lead::CLOSED_STATUSES)
+            ->with(['owner', 'plan', 'quote'])
+            ->when($request->query('rating'), fn ($q, $r) => $q->where('rating', $r))
+            ->when($request->query('staff_id'), fn ($q, $id) => $q->where('assigned_staff_id', $id))
+            ->when($request->boolean('unassigned'), fn ($q) => $q->whereNull('assigned_staff_id'))
+            ->when($request->query('q'), function ($q, $search) {
+                $q->where(function ($w) use ($search) {
+                    $w->where('number', 'like', "%{$search}%")
+                      ->orWhere('name', 'like', "%{$search}%")
+                      ->orWhere('company', 'like', "%{$search}%")
+                      ->orWhere('phone', 'like', "%{$search}%");
+                });
+            })
+            // Within a column: overdue follow-ups first, then hot leads — the
+            // top of each column is the next call to make.
+            ->orderByRaw('CASE WHEN next_follow_up_at IS NULL THEN 1 ELSE 0 END')
+            ->orderBy('next_follow_up_at')
+            ->orderByRaw("CASE rating WHEN 'hot' THEN 1 WHEN 'warm' THEN 2 ELSE 3 END")
+            ->orderByDesc('id')
+            ->get();
+
+        // One column per open stage, always all of them: an empty column is
+        // information (nothing is being negotiated), not something to hide.
+        $columns = [];
+        foreach (Lead::ORDERED_STAGES as $stage) {
+            $inStage = $leads->where('status', $stage)->values();
+
+            $columns[$stage] = [
+                'label' => Lead::STATUSES[$stage],
+                'leads' => $inStage,
+                'count' => $inStage->count(),
+                'value' => round((float) $inStage->sum('estimated_value'), 2),
+            ];
+        }
+
+        return view('leads.board', [
+            'columns'    => $columns,
+            'search'     => $request->query('q'),
+            'rating'     => $request->query('rating'),
+            'staffId'    => $request->query('staff_id'),
+            'unassigned' => $request->boolean('unassigned'),
+            'staff'      => $this->salesStaff(),
+            'totals'     => $this->summary(),
+        ]);
+    }
+
+    /**
+     * Move a lead to another OPEN stage — the board's drop / select action.
+     *
+     * Won and lost are rejected here on purpose: closing a deal needs its own
+     * input (a subscriber link, or a reason for the funnel), so it goes through
+     * win()/lose() rather than a drag that silently discards that context.
+     */
+    public function stage(Request $request, int $id)
+    {
+        $lead = Lead::where('tenant_id', tenant_id())->findOrFail($id);
+
+        $data = $request->validate([
+            'status' => 'required|in:' . implode(',', Lead::ORDERED_STAGES),
+            'note'   => 'nullable|string|max:1000',
+        ], [], ['status' => 'stage']);
+
+        $lead = $this->leads->changeStatus($lead, $data['status'], $data['note'] ?? null, $this->actor());
+
+        $message = "Lead {$lead->number} moved to {$lead->statusLabel()}.";
+
+        // The board moves cards over fetch(); a redirect would be replayed as a
+        // POST to the board URL, so answer ajax callers with JSON.
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'ok'      => true,
+                'message' => $message,
+                'status'  => $lead->status,
+            ]);
+        }
+
+        return redirect()->route('leads.board')->with('status', $message);
+    }
+
     public function create()
     {
         return view('leads.create', [

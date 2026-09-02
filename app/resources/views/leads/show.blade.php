@@ -17,6 +17,7 @@
   @endif
 
   <a class="btn" href="{{ route('leads.edit', $lead->id) }}">Edit Lead</a>
+  <a class="btn" href="{{ route('leads.board') }}">Pipeline Board</a>
   <a class="btn" href="{{ route('leads.index') }}">Back to Leads</a>
   @if ($lead->quote)
     <a class="btn" href="{{ route('quotes.show', ['quotation', $lead->quote_id]) }}">View Quotation {{ $lead->quote->number }}</a>

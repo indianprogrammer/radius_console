@@ -98,6 +98,9 @@ Route::prefix('inventory')->name('inventory.')->group(function () {
 // transition and the `lead_activities` trail is always written.
 Route::prefix('leads')->name('leads.')->group(function () {
     Route::get('/', [LeadController::class, 'index'])->name('index');
+    // Declared BEFORE `/{id}`: that placeholder is unconstrained, so a literal
+    // segment listed after it would be swallowed as an id.
+    Route::get('/board', [LeadController::class, 'board'])->name('board');
     Route::get('/create', [LeadController::class, 'create'])->name('create');
     Route::post('/', [LeadController::class, 'store'])->name('store');
     Route::get('/{id}', [LeadController::class, 'show'])->name('show');
@@ -107,6 +110,7 @@ Route::prefix('leads')->name('leads.')->group(function () {
 
     Route::post('/{id}/activity', [LeadController::class, 'activity'])->name('activity');
     Route::post('/{id}/follow-up', [LeadController::class, 'followUp'])->name('follow-up');
+    Route::post('/{id}/stage', [LeadController::class, 'stage'])->name('stage');
     Route::post('/{id}/quote', [LeadController::class, 'quote'])->name('quote');
     Route::post('/{id}/win', [LeadController::class, 'win'])->name('win');
     Route::post('/{id}/lose', [LeadController::class, 'lose'])->name('lose');

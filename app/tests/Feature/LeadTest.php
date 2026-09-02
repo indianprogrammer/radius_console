@@ -346,8 +346,120 @@ class LeadTest extends TestCase
         $this->get($this->url('/leads'))->assertOk()->assertSee('50.0%');
     }
 
-    public function test_another_tenants_lead_is_not_reachable(): void
+    // ── Pipeline board ───────────────────────────────────────────────────
+
+    public function test_the_board_shows_open_leads_grouped_by_stage(): void
     {
+        $this->lead(['name' => 'Fresh Prospect', 'status' => 'new']);
+        $this->lead(['name' => 'Talking Terms', 'status' => 'negotiation']);
+
+        $this->get($this->url('/leads/board'))
+            ->assertOk()
+            ->assertSee('Pipeline Board')
+            ->assertSee('Fresh Prospect')
+            ->assertSee('Talking Terms')
+            // Every open stage gets a column, even an empty one.
+            ->assertSee('Qualified')
+            ->assertSee('Proposal Sent');
+    }
+
+    public function test_the_board_excludes_closed_leads(): void
+    {
+        $won = $this->lead(['name' => 'Won Deal']);
+        $this->service()->markWon($won);
+        $lost = $this->lead(['name' => 'Lost Deal']);
+        $this->service()->markLost($lost, 'price');
+        $this->lead(['name' => 'Still Open']);
+
+        $this->get($this->url('/leads/board'))
+            ->assertOk()
+            ->assertSee('Still Open')
+            ->assertDontSee('Won Deal')
+            ->assertDontSee('Lost Deal');
+    }
+
+    public function test_the_board_column_totals_sum_the_stage_value(): void
+    {
+        $this->lead(['status' => 'qualified', 'estimated_value' => 1200]);
+        $this->lead(['status' => 'qualified', 'estimated_value' => 800]);
+
+        $this->get($this->url('/leads/board'))->assertOk()->assertSee('2,000.00');
+    }
+
+    public function test_the_board_honours_the_owner_and_rating_filters(): void
+    {
+        $staff = $this->staff();
+        $this->lead(['name' => 'Mine Hot', 'rating' => 'hot', 'assigned_staff_id' => $staff->id]);
+        $this->lead(['name' => 'Someone Elses', 'rating' => 'cold']);
+
+        $this->get($this->url('/leads/board?staff_id=' . $staff->id))
+            ->assertOk()->assertSee('Mine Hot')->assertDontSee('Someone Elses');
+
+        $this->get($this->url('/leads/board?rating=cold'))
+            ->assertOk()->assertSee('Someone Elses')->assertDontSee('Mine Hot');
+
+        $this->get($this->url('/leads/board?unassigned=1'))
+            ->assertOk()->assertSee('Someone Elses')->assertDontSee('Mine Hot');
+    }
+
+    public function test_moving_a_card_changes_the_stage_and_records_the_trail(): void
+    {
+        $lead = $this->lead(['status' => 'contacted']);
+
+        $this->postJson($this->url('/leads/' . $lead->id . '/stage'), ['status' => 'negotiation'])
+            ->assertOk()
+            ->assertJson(['ok' => true, 'status' => 'negotiation']);
+
+        $this->assertSame('negotiation', $lead->refresh()->status);
+        $this->assertDatabaseHas('lead_activities', [
+            'lead_id' => $lead->id, 'type' => 'status',
+            'from_status' => 'contacted', 'to_status' => 'negotiation',
+        ]);
+    }
+
+    /**
+     * Closing a deal needs its own input (a subscriber link, or a reason for the
+     * funnel), so a drag must not be able to do it silently.
+     */
+    public function test_a_card_cannot_be_dragged_to_won_or_lost(): void
+    {
+        $lead = $this->lead();
+
+        $this->postJson($this->url('/leads/' . $lead->id . '/stage'), ['status' => 'won'])
+            ->assertStatus(422);
+        $this->postJson($this->url('/leads/' . $lead->id . '/stage'), ['status' => 'lost'])
+            ->assertStatus(422);
+
+        $this->assertSame('new', $lead->refresh()->status);
+    }
+
+    public function test_an_unknown_stage_is_rejected(): void
+    {
+        $lead = $this->lead();
+
+        $this->post($this->url('/leads/' . $lead->id . '/stage'), ['status' => 'dreaming'])
+            ->assertSessionHasErrors('status');
+
+        $this->assertSame('new', $lead->refresh()->status);
+    }
+
+    public function test_another_tenants_card_cannot_be_moved(): void
+    {
+        $other = Tenant::create([
+            'name' => 'Board Rival', 'domain' => 'board-rival.test', 'slug' => 'board-rival', 'status' => 'active',
+        ]);
+        $foreign = Lead::create(array_merge(
+            ['tenant_id' => $other->id, 'number' => 'LEAD-BOARD'],
+            $this->payload(),
+        ));
+
+        $this->postJson($this->url('/leads/' . $foreign->id . '/stage'), ['status' => 'qualified'])
+            ->assertNotFound();
+
+        $this->assertSame('new', $foreign->refresh()->status);
+    }
+
+    public function test_another_tenants_lead_is_not_reachable(): void    {
         $other = Tenant::create([
             'name' => 'Rival ISP', 'domain' => 'rival-sales.test', 'slug' => 'rival-sales', 'status' => 'active',
         ]);
