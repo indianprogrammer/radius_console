@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\ResolveTenant;
+use App\Http\Middleware\RequireAuthentication;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -23,9 +24,13 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    ->withCommands([__DIR__.'/../app/Console/Commands'])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(ResolveTenant::class);
         $middleware->append(SecurityHeaders::class);
+        // Authentication must run inside the web group, after StartSession;
+        // registering it globally makes every request appear unauthenticated.
+        $middleware->web(append: [RequireAuthentication::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

@@ -23,6 +23,13 @@
     </div>
     <div class="topbar-right">
       <button class="theme-btn" data-theme-toggle title="Toggle theme">◐</button>
+      @auth
+        <span class="topbar-user">{{ auth()->user()->name }}</span>
+        <form method="POST" action="{{ route('logout') }}" class="logout-form">
+          @csrf
+          <button class="theme-btn" type="submit" title="Sign out" aria-label="Sign out">↪</button>
+        </form>
+      @endauth
       @yield('topbar-right', '')
     </div>
   </header>

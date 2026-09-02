@@ -14,7 +14,7 @@
       ['label' => 'Reports', 'route' => '#', 'ready' => false],
       ['label' => 'IPDR / Compliance', 'route' => '#', 'ready' => false, 'note' => 'Pending IPDR Server (#7) — IpdrClient adapter'],
       ['label' => 'Cron / Automation', 'route' => '#', 'ready' => false],
-      ['label' => 'Audit Log', 'route' => '#', 'ready' => false],
+      // "Audit Log" now lives in the Logs group below (logs.channel/audit).
     ],
     'Billing & Invoices' => [
       ['label' => 'Quotations', 'route' => 'quotes.index', 'params' => 'quotation', 'ready' => true],
@@ -47,6 +47,21 @@
     ],
     'Support Tickets' => [
       ['label' => 'Tickets', 'route' => 'tickets.index', 'ready' => true],
+    ],
+    'Logs' => [
+      // SRD §5.0 #10. Every entry is the SAME route (`logs.channel`) with a
+      // different channel, because all nine pages are `audit_log` filtered by
+      // `channel` — see App\Models\ActivityLog::CHANNELS, which this list
+      // mirrors. `params` is what distinguishes the active one (see $renderItem).
+      ['label' => 'Audit Logs', 'route' => 'logs.channel', 'params' => 'audit', 'ready' => true],
+      ['label' => 'Login History', 'route' => 'logs.channel', 'params' => 'login', 'ready' => true],
+      ['label' => 'Login Fail Attempts', 'route' => 'logs.channel', 'params' => 'login_fail', 'ready' => true],
+      ['label' => 'SMS Logs', 'route' => 'logs.channel', 'params' => 'sms', 'ready' => true],
+      ['label' => 'Email Logs', 'route' => 'logs.channel', 'params' => 'email', 'ready' => true],
+      ['label' => 'Call Logs', 'route' => 'logs.channel', 'params' => 'call', 'ready' => true],
+      ['label' => 'WhatsApp Logs', 'route' => 'logs.channel', 'params' => 'whatsapp', 'ready' => true],
+      ['label' => 'Aadhaar Logs', 'route' => 'logs.channel', 'params' => 'aadhaar', 'ready' => true],
+      ['label' => 'User Syslogs', 'route' => 'logs.channel', 'params' => 'syslog', 'ready' => true],
     ],
     'Radius Control' => [
       ['label' => 'Bandwidth Control', 'route' => 'bandwidth-profiles.index', 'ready' => true],

@@ -9,6 +9,31 @@
 .page-header { margin: 0 0 1rem; }
 .page-header h1 { margin: 0 0 .25rem; font-size: 1.4rem; }
 
+/* ── Authentication ───────────────────────────────────────── */
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: var(--color-bg);
+}
+.auth-panel {
+  width: min(100%, 28rem);
+  padding: 2rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-top: 4px solid var(--color-primary);
+  border-radius: 10px;
+  box-shadow: 0 1rem 3rem color-mix(in srgb, var(--color-text) 10%, transparent);
+}
+.auth-mark { margin-bottom: 1.5rem; color: var(--color-primary); font-size: 1rem; font-weight: 700; }
+.auth-panel h1 { margin: 0 0 .25rem; font-size: 1.7rem; }
+.auth-panel form { display: grid; gap: 1rem; margin-top: 1.5rem; }
+.auth-remember { display: flex; align-items: center; gap: .45rem; font-size: .85rem; color: var(--color-text-muted); }
+.auth-submit { width: 100%; margin-top: .25rem; }
+.topbar-user { font-size: .8rem; color: var(--color-text-muted); }
+.logout-form { display: inline; }
+
 /* ── Form Layout ───────────────────────────────────────────── */
 .form-grid {
   display: grid;
@@ -335,6 +360,33 @@ th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; white-sp
 
 /* A select driven by another control (e.g. subscriber locked by invoice). */
 .gui-input.is-locked { opacity: .7; cursor: not-allowed; }
+
+/* ── Logs: payload drawer ──────────────────────────────────────
+   <details> instead of a modal — the payload is occasional reference
+   material, so it costs no JavaScript and stays keyboard-reachable. */
+.log-payload > summary {
+  cursor: pointer;
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+.log-payload[open] > summary { margin-bottom: .35rem; }
+.log-payload pre {
+  margin: 0;
+  padding: .5rem .6rem;
+  /* Logs are wide; cap the drawer instead of letting one entry push the
+     table's row height past a screenful. */
+  max-width: 32rem;
+  max-height: 14rem;
+  overflow: auto;
+  font-size: .72rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+}
 
 /* Label available to screen readers where a visible one would be noise. */
 .visually-hidden {
