@@ -35,4 +35,23 @@ return [
         ],
     ],
 
+    /*
+    | Google Maps Platform — used by the subscriber Installation Address
+    | picker (App\Http\Controllers\GeocodeController).
+    |
+    | Requires the "Geocoding API" and "Places API" to be enabled on the
+    | project. The key is used SERVER-SIDE ONLY: it is never sent to the
+    | browser, so it should be restricted by IP (not by HTTP referrer).
+    |
+    | When `key` is empty the controller falls back to OpenStreetMap's
+    | Nominatim, so local/dev environments keep working without a key.
+    */
+    'google_maps' => [
+        'key'      => env('GOOGLE_MAPS_API_KEY'),
+        // Biases (not restricts) results toward one region: an ISP's
+        // addresses are almost always in a single country.
+        'region'   => env('GOOGLE_MAPS_REGION', 'in'),
+        'language' => env('GOOGLE_MAPS_LANGUAGE', 'en'),
+    ],
+
 ];

@@ -26,22 +26,18 @@ class InvoiceService
     /**
      * Generate / update the provisioning invoice for a subscriber.
      *
-     * Creates one invoice (or re-uses an existing unpaid one) and attaches
-     * line items for each billing item on the subscriber.
+     * Creates one invoice (or re-uses an existing unpaid one) based on the
+     * subscriber's plan and associated tax rates.
      *
      * @param  Subscriber  $subscriber
-     * @param  array|null  $billingItems  Override items (falls back to $subscriber->billing_items)
      * @return Invoice
      */
-    public function generateFromSubscriber(Subscriber $subscriber, ?array $billingItems = null): Invoice
+    public function generateFromSubscriber(Subscriber $subscriber): Invoice
     {
-        $items = $billingItems ?? $subscriber->billing_items ?? [];
-        if (empty($items)) {
-            return $this->getOrCreateInvoice($subscriber);
-        }
-
         $invoice = $this->getOrCreateInvoice($subscriber);
-        $invoice = $this->syncItems($invoice, $subscriber, $items);
+
+        // Sync items based on the subscriber's plan (price, tax, duration)
+        $this->syncItems($invoice, $subscriber);
 
         // Recompute totals from items
         $this->recomputeTotals($invoice);
@@ -82,54 +78,43 @@ class InvoiceService
     }
 
     /**
-     * Sync line items on the invoice with the subscriber's billing items.
+     * Sync line items on the invoice from the subscriber's plan and tax settings.
+     *
+     * When no explicit billing items are supplied (the column has been removed),
+     * each active plan item is represented as a single one-time line.
      */
-    protected function syncItems(Invoice $invoice, Subscriber $subscriber, array $items): Invoice
+    protected function syncItems(Invoice $invoice, Subscriber $subscriber): Invoice
     {
-        // Remove stale items that are no longer on the subscriber
+        // Remove any existing items first
         $invoice->items()->delete();
 
-        foreach ($items as $bi) {
-            $type      = $bi['type']   ?? 'one-time';
-            $label     = $bi['label']  ?? 'Item';
-            $amount    = (float) ($bi['amount']  ?? 0);
-            $qty       = max(1, (int)   ($bi['qty']     ?? 1));
-            $taxable   = !empty($bi['taxable']);
-            $cycle     = $bi['billing_cycle'] ?? null;
-            $isRefund  = !empty($bi['is_refundable']);
-            $productId = $bi['product_id'] ?? null;
-
-            $unitPrice  = $amount;
-            $lineAmount = round($unitPrice * $qty, 2);
-            $taxRate    = $this->resolveTaxRate($subscriber);
-            $taxAmount  = $taxable ? round($lineAmount * $taxRate / 100, 2) : 0;
-            $lineTotal  = round($lineAmount + $taxAmount, 2);
-
-            $nextBillAt = null;
-            if ($type === 'recurring' && $cycle) {
-                $nextBillAt = $this->computeNextBillDate($cycle);
-            }
-
-            InvoiceItem::create([
-                'tenant_id'      => $subscriber->tenant_id,
-                'invoice_id'     => $invoice->id,
-                'subscriber_id'  => $subscriber->id,
-                'type'           => $type,
-                'label'          => $label,
-                'description'    => $bi['description'] ?? null,
-                'qty'            => $qty,
-                'unit_price'     => $unitPrice,
-                'amount'         => $lineAmount,
-                'taxable'        => $taxable,
-                'tax_rate'       => $taxRate,
-                'tax_amount'     => $taxAmount,
-                'line_total'     => $lineTotal,
-                'is_refundable'  => $isRefund,
-                'billing_cycle'  => $type === 'recurring' ? $cycle : null,
-                'next_bill_at'   => $nextBillAt,
-                'status'         => $bi['status'] ?? ($type === 'recurring' ? 'active' : 'active'),
-            ]);
+        $plan = $subscriber->plan;
+        if (! $plan) {
+            return $invoice->fresh();
         }
+
+        $taxRate = $this->resolveTaxRate($subscriber);
+        $price   = (float) ($plan->price ?? 0);
+
+        InvoiceItem::create([
+            'tenant_id'      => $subscriber->tenant_id,
+            'invoice_id'     => $invoice->id,
+            'subscriber_id'  => $subscriber->id,
+            'type'           => 'one-time',
+            'label'          => $plan->name,
+            'description'    => null,
+            'qty'            => 1,
+            'unit_price'     => $price,
+            'amount'         => $price,
+            'taxable'        => true,
+            'tax_rate'       => $taxRate,
+            'tax_amount'     => $taxRate ? round($price * $taxRate / 100, 2) : 0,
+            'line_total'     => $taxRate ? round($price + $price * $taxRate / 100, 2) : $price,
+            'is_refundable'  => false,
+            'billing_cycle'  => null,
+            'next_bill_at'   => null,
+            'status'         => 'active',
+        ]);
 
         return $invoice->fresh();
     }

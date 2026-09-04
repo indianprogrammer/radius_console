@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BandwidthProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FranchiseController;
+use App\Http\Controllers\GeocodeController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\LeadController;
@@ -37,6 +38,14 @@ Route::prefix('subscribers')->name('subscribers.')->group(function () {
     Route::get('/{id}/edit', [SubscriberController::class, 'edit'])->name('edit');
     Route::put('/{id}', [SubscriberController::class, 'update'])->name('update');
     Route::delete('/{id}', [SubscriberController::class, 'destroy'])->name('destroy');
+});
+
+// Address lookup for the subscriber Installation Address map picker. Read-only
+// JSON, served through our own host so the upstream geocoder gets the identifying
+// User-Agent it requires and responses can be cached. See GeocodeController.
+Route::prefix('geocode')->name('geocode.')->group(function () {
+    Route::get('/search', [GeocodeController::class, 'search'])->name('search');
+    Route::get('/reverse', [GeocodeController::class, 'reverse'])->name('reverse');
 });
 
 Route::prefix('nas')->name('nas.')->group(function () {

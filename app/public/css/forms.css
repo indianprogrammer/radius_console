@@ -237,6 +237,81 @@ input[type="file"].gui-input { padding: .45rem .65rem; }
 .bi-product-picker { display: flex; align-items: center; gap: .25rem; }
 .bi-product-picker input[type="text"] { flex: 1 1 auto; min-width: 0; }
 
+/* ── Address section (billing + installation map picker) ──────────────
+   Used by resources/views/partials/subscriber-address.blade.php. */
+.addr-search { display: flex; align-items: stretch; gap: .5rem; }
+.addr-search .btn { white-space: nowrap; }
+
+/* Wraps ONLY the text box, so it is the positioning context for the
+   suggestion list — that makes the dropdown exactly as wide as the input
+   instead of the full row (which also carries the "Locate me" button). */
+.addr-search-input { position: relative; flex: 1 1 auto; min-width: 0; }
+.addr-search-input .gui-input { width: 100%; }
+
+.addr-results {
+  position: absolute;
+  z-index: 500; /* above form controls, below Leaflet's own popups (700+) */
+  top: 100%;
+  left: 0;
+  width: 100%; /* = the search box, since .addr-search-input wraps only it */
+  margin: .25rem 0 0;
+  padding: .25rem;
+  list-style: none;
+  max-height: 15rem;
+  overflow-y: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 18%);
+}
+.addr-result {
+  padding: .45rem .6rem;
+  font-size: .83rem;
+  line-height: 1.35;
+  border-radius: 6px;
+  cursor: pointer;
+  /* Long formatted addresses wrap instead of widening the list. */
+  overflow-wrap: anywhere;
+}
+.addr-result:hover,
+.addr-result:focus-visible {
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  outline: none;
+}
+.addr-result-empty {
+  padding: .45rem .6rem;
+  font-size: .8rem;
+  color: var(--color-text-muted);
+}
+
+.addr-map-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: .5rem;
+  flex-wrap: wrap;
+}
+.addr-map {
+  height: 22rem;
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  /* Leaflet needs a positioned, non-zero-height box before init. */
+  position: relative;
+  z-index: 0;
+}
+@media (max-width: 640px) {
+  .addr-map { height: 16rem; }
+}
+
+/* Installation fields currently mirroring the billing address. They stay fully
+   editable — the tint only signals where the value came from, and typing in one
+   unlinks it (see public/js/address-map.js). */
+.gui-input.is-mirrored {
+  background-color: color-mix(in srgb, var(--color-primary) 6%, transparent);
+}
+
 /* ── Panels ────────────────────────────────────────────────── */
 .panel { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 10px; margin-bottom: 1rem; }
 .panel-body { padding: 1rem 1.25rem; }

@@ -14,6 +14,98 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 final class SubscriberController extends Controller
 {
+    /**
+     * Address columns written by the Billing / Installation Address section
+     * (resources/views/partials/subscriber-address.blade.php).
+     *
+     * The installation locality reuses the generic CAF `city/state/zip/country`
+     * columns — the field engineer's address is the one the rest of the app
+     * treats as "the" subscriber address — while billing carries its own set.
+     */
+    private const ADDRESS_FIELDS = [
+        'billing_address', 'billing_city', 'billing_state', 'billing_zip', 'billing_country',
+        'installation_address', 'installation_same_as_billing',
+        'installation_landmark', 'installation_place_label',
+        'city', 'state', 'zip', 'country',
+        'latitude', 'longitude',
+    ];
+
+    /** Validation rules for the address section, shared by store() and update(). */
+    private static function addressRules(): array
+    {
+        return [
+            // Billing side
+            'billing_address'      => 'nullable|string|max:1000',
+            'billing_city'         => 'nullable|string|max:100',
+            'billing_state'        => 'nullable|string|max:100',
+            'billing_zip'          => 'nullable|string|max:12',
+            'billing_country'      => 'nullable|string|max:100',
+
+            // Installation side
+            'installation_address'          => 'nullable|string|max:1000',
+            'installation_same_as_billing'  => 'nullable|boolean',
+            'installation_landmark'         => 'nullable|string|max:200',
+            'installation_place_label'      => 'nullable|string|max:255',
+            'city'                 => 'nullable|string|max:100',
+            'state'                => 'nullable|string|max:100',
+            'zip'                  => 'nullable|string|max:12',
+            'country'              => 'nullable|string|max:100',
+
+            // Map pin. Bounds are validated so a malformed submission cannot
+            // store a coordinate the map would later fail to render.
+            'latitude'             => 'nullable|numeric|between:-90,90|required_with:longitude',
+            'longitude'            => 'nullable|numeric|between:-180,180|required_with:latitude',
+        ];
+    }
+
+    /**
+     * Reconcile the address block before it is written.
+     *
+     * Two things the raw request cannot express on its own:
+     *  - An unchecked switch is absent from the POST, so "same as billing" has
+     *    to be written as false explicitly or it would stick at its old value.
+     *  - When that flag IS set, the installation locality is filled by copy
+     *    from billing. Doing it server-side too means the stored row is correct
+     *    even if the browser JS never ran. Only BLANK fields are copied: the
+     *    installation fields are editable, and the browser clears the flag as
+     *    soon as one is edited, so anything still present here was typed
+     *    deliberately and must win over the copy.
+     */
+    private function normaliseAddress(array $update, array $data): array
+    {
+        $same = (bool) ($data['installation_same_as_billing'] ?? false);
+        $update['installation_same_as_billing'] = $same;
+
+        if ($same) {
+            // installation field => billing field it inherits from
+            $inherits = [
+                'installation_address' => 'billing_address',
+                'city'                 => 'billing_city',
+                'state'                => 'billing_state',
+                'zip'                  => 'billing_zip',
+                'country'              => 'billing_country',
+            ];
+
+            foreach ($inherits as $target => $source) {
+                if (($data[$target] ?? null) === null || trim((string) $data[$target]) === '') {
+                    $update[$target] = $data[$source] ?? null;
+                }
+            }
+        }
+
+        // The pin is all-or-nothing: clearing it must null BOTH columns so a
+        // stale half-coordinate can never survive.
+        $lat = $data['latitude'] ?? null;
+        $lon = $data['longitude'] ?? null;
+
+        if ($lat === null || $lon === null || $lat === '' || $lon === '') {
+            $update['latitude'] = null;
+            $update['longitude'] = null;
+        }
+
+        return $update;
+    }
+
     public function index(Request $request, SubscriberRepository $subscribers)
     {
         $perPage = max(1, min(100, (int) $request->query('per_page', 10)));
@@ -85,19 +177,7 @@ final class SubscriberController extends Controller
             'special.*.approved_by' => 'nullable|string|max:50',
             'special.*.amount'      => 'nullable|numeric|min:0',
             'special.*.type'        => 'nullable|integer|in:1,2',
-            // Dynamic billing items (refundable | one-time | recurring)
-            'billing_items'                => 'nullable|array',
-            'billing_items.*.label'        => 'nullable|string|max:200',
-            'billing_items.*.description'  => 'nullable|string|max:500',
-            'billing_items.*.type'         => 'nullable|string|in:refundable,one-time,recurring',
-            'billing_items.*.amount'       => 'nullable|numeric|min:0',
-            'billing_items.*.qty'          => 'nullable|integer|min:1',
-            'billing_items.*.taxable'      => 'nullable|integer|in:0,1',
-            'billing_items.*.is_refundable'=> 'nullable|integer|in:0,1',
-            'billing_items.*.billing_cycle'=> 'nullable|string|in:monthly,quarterly,yearly',
-            'billing_items.*.status'       => 'nullable|string|in:active,inactive',
-            'billing_items.*.product_id'   => 'nullable|integer',
-        ]);
+        ] + self::addressRules());
 
         $tenant = view()->shared('tenant');
         $tenantSlug = $tenant->slug ?? 'tenant';
@@ -139,8 +219,10 @@ final class SubscriberController extends Controller
             'ip_mode','pool_name',
             'auto_renew','bind_mac','bind_static_ip','exclude_mac_bind',
             'dont_suspend',
+            ...self::ADDRESS_FIELDS,
         ];
 
+        // Persist CAF / metadata fields on the Eloquent model.
         $update = [];
         foreach ($cafFields as $field) {
             if (array_key_exists($field, $data)) {
@@ -151,40 +233,15 @@ final class SubscriberController extends Controller
             $update['special_charges'] = array_values($data['special']);
         }
 
-        // Persist billing_items (refundable | one-time | recurring)
-        $billingItems = [];
-        if (!empty($data['billing_items'])) {
-            foreach ($data['billing_items'] as $bi) {
-                if (empty($bi['label']) && empty($bi['amount'])) {
-                    continue;
-                }
-                $billingItems[] = [
-                    'label'         => $bi['label']        ?? '',
-                    'description'   => $bi['description']  ?? null,
-                    'type'          => $bi['type']         ?? 'one-time',
-                    'amount'        => (float) ($bi['amount']  ?? 0),
-                    'qty'           => max(1, (int) ($bi['qty'] ?? 1)),
-                    'taxable'       => !empty($bi['taxable']),
-                    'is_refundable' => !empty($bi['is_refundable']),
-                    'billing_cycle' => $bi['billing_cycle'] ?? null,
-                    'status'        => $bi['status']       ?? 'active',
-                    'product_id'    => $bi['product_id']  ?? null,
-                ];
-            }
-        }
-        if (!empty($billingItems)) {
-            $update['billing_items'] = $billingItems;
-        }
+        $update = $this->normaliseAddress($update, $data);
 
         if (!empty($update)) {
             $subModel->where('id', $provisioned->id)->update($update);
         }
 
-        // Auto-generate invoice with the billing items attached as line items.
-        if (!empty($billingItems)) {
-            $fresh = $subModel->find($provisioned->id);
-            app(InvoiceService::class)->generateFromSubscriber($fresh, $billingItems);
-        }
+        // Auto-generate invoice based on the subscriber's plan.
+        $fresh = $subModel->find($provisioned->id);
+        app(InvoiceService::class)->generateFromSubscriber($fresh);
 
         return redirect()->route('subscribers.index')->with('status', 'Subscriber provisioned. Invoice auto-generated.');
     }
@@ -257,19 +314,7 @@ final class SubscriberController extends Controller
             'special.*.approved_by'=> 'nullable|string|max:50',
             'special.*.amount'     => 'nullable|numeric|min:0',
             'special.*.type'       => 'nullable|integer|in:1,2',
-            // Dynamic billing items (refundable | one-time | recurring)
-            'billing_items'                => 'nullable|array',
-            'billing_items.*.label'        => 'nullable|string|max:200',
-            'billing_items.*.description'  => 'nullable|string|max:500',
-            'billing_items.*.type'         => 'nullable|string|in:refundable,one-time,recurring',
-            'billing_items.*.amount'       => 'nullable|numeric|min:0',
-            'billing_items.*.qty'          => 'nullable|integer|min:1',
-            'billing_items.*.taxable'      => 'nullable|integer|in:0,1',
-            'billing_items.*.is_refundable'=> 'nullable|integer|in:0,1',
-            'billing_items.*.billing_cycle'=> 'nullable|string|in:monthly,quarterly,yearly',
-            'billing_items.*.status'       => 'nullable|string|in:active,inactive',
-            'billing_items.*.product_id'   => 'nullable|integer',
-        ]);
+        ] + self::addressRules());
 
         $tenant = view()->shared('tenant');
         $tenantSlug = $tenant->slug ?? 'tenant';
@@ -284,8 +329,14 @@ final class SubscriberController extends Controller
             'mac'                 => $data['mac'] ?? null,
             'static_ip'           => $data['static_ip'] ?? null,
             'expiry'              => $data['expiry'] ?? null,
-            'status'              => $data['status'] ?? null,
         ];
+        // `status` must be OMITTED rather than sent as null when the request
+        // does not carry one: UpdateSubscriber keys off array_key_exists() and
+        // Subscriber::$status is a non-nullable string, so a null would throw
+        // and surface as a bogus "radius" error while nothing was saved.
+        if (($data['status'] ?? null) !== null) {
+            $radiusData['status'] = $data['status'];
+        }
         if (!empty($data['password'])) {
             $radiusData['password'] = $data['password'];
         }
@@ -306,6 +357,7 @@ final class SubscriberController extends Controller
             'ip_mode','pool_name',
             'auto_renew','bind_mac','bind_static_ip','exclude_mac_bind',
             'dont_suspend',
+            ...self::ADDRESS_FIELDS,
         ];
 
         $updateData = [];
@@ -322,45 +374,17 @@ final class SubscriberController extends Controller
             $updateData['special_charges'] = array_values($data['special']);
         }
 
-        // Persist billing_items (refundable | one-time | recurring)
-        $billingItems = [];
-        if (!empty($data['billing_items'])) {
-            foreach ($data['billing_items'] as $bi) {
-                if (empty($bi['label']) && empty($bi['amount'])) {
-                    continue;
-                }
-                $billingItems[] = [
-                    'label'         => $bi['label']        ?? '',
-                    'description'   => $bi['description']  ?? null,
-                    'type'          => $bi['type']         ?? 'one-time',
-                    'amount'        => (float) ($bi['amount']  ?? 0),
-                    'qty'           => max(1, (int) ($bi['qty'] ?? 1)),
-                    'taxable'       => !empty($bi['taxable']),
-                    'is_refundable' => !empty($bi['is_refundable']),
-                    'billing_cycle' => $bi['billing_cycle'] ?? null,
-                    'status'        => $bi['status']       ?? 'active',
-                    'product_id'    => $bi['product_id']  ?? null,
-                ];
-            }
-        }
-        if (!empty($billingItems)) {
-            $updateData['billing_items'] = $billingItems;
-        }
+        $updateData = $this->normaliseAddress($updateData, $data);
 
         if (!empty($updateData)) {
             $subModel->where('id', $id)->update($updateData);
         }
 
-        // Sync invoice line items with the latest billing_items.
-        if (!empty($billingItems)) {
-            $fresh = $subModel->find($id);
-            app(InvoiceService::class)->generateFromSubscriber($fresh, $billingItems);
-        } elseif (!empty($data['billing_items']) && empty($billingItems)) {
-            // All rows were empty (cleared) - just remove line items.
-            \App\Models\InvoiceItem::where('subscriber_id', $id)->delete();
-        }
+        // Sync invoice line items with the subscriber's plan.
+        $fresh = $subModel->find($id);
+        app(InvoiceService::class)->generateFromSubscriber($fresh);
 
-        return redirect()->route('subscribers.index')->with('status', 'Subscriber updated. Invoice line items synced.');
+        return redirect()->route('subscribers.index')->with('status', 'Subscriber updated.');
     }
 
     public function destroy(Request $request, int $id, SubscriberRepository $subscribers, \App\Src\Ports\RadiusClient $radius)

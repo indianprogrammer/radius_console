@@ -33,11 +33,18 @@ class Subscriber extends Model
         'auto_renew', 'bind_mac', 'bind_static_ip',
         'exclude_mac_bind', 'dont_suspend',
 
+        // Address — billing side
+        'billing_address', 'billing_city', 'billing_state',
+        'billing_zip', 'billing_country',
+
+        // Address — installation side (locality + map pin)
+        'installation_address', 'installation_same_as_billing',
+        'installation_landmark', 'installation_place_label',
+        'city', 'state', 'zip', 'country',
+        'latitude', 'longitude',
+
         // Special discounts / additional charges (JSON: [{reason,desc,approved_by,amount,type}])
         'special_charges',
-
-        // Dynamic billing items (JSON: [{label,type,amount,qty,taxable,billing_cycle,is_refundable,product_id}])
-        'billing_items',
     ];
 
     protected $casts = [
@@ -51,7 +58,12 @@ class Subscriber extends Model
         'installation_amount'=> 'decimal:2',
         'security_deposit'   => 'decimal:2',
         'special_charges'    => 'array',
-        'billing_items'      => 'array',
+
+        'installation_same_as_billing' => 'boolean',
+        // Kept as strings, not floats: the map round-trips the exact stored
+        // value and float casting would reintroduce binary rounding drift.
+        'latitude'           => 'decimal:7',
+        'longitude'          => 'decimal:7',
     ];
 
     protected $hidden = ['password_enc'];

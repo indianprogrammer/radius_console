@@ -8,7 +8,6 @@
     $userTypes     = [1=>'Individual',2=>'Business'];
     $ipModes       = [2=>'DHCP',1=>'Static Ip',3=>'Pool Name',4=>'Pool Name + Static Ip'];
     $accessTypes   = ['pppoe'=>'PPPoE','ipoe'=>'IPoE'];
-    $billingRows  = old('billing_items', $e->billing_items ?? []);
   @endphp
 
   <div class="page-header">
@@ -133,37 +132,8 @@
       </div>
     </div>
 
-    {{-- ========================= BILLING ITEMS (DYNAMIC) ========================= --}}
-    <div class="panel">
-      <div class="panel-body">
-        <div class="section-title-row">
-          <h4 class="section-title">Billing Items</h4>
-          <div class="hint">Refundable, one-time, or recurring line items. Edits auto-sync the subscriber's invoice.</div>
-        </div>
-        <div class="billing-items-toolbar">
-          <button type="button" class="btn btn-primary btn-sm" id="add-billing-item">+ Add Billing Item</button>
-          <span class="muted-label" id="billing-items-total">Total: 0.00</span>
-        </div>
-        <div class="table-wrap">
-          <table class="data-table" id="billing-items-table">
-            <thead>
-              <tr>
-                <th style="min-width:200px;">Product / Label</th>
-                <th>Type</th>
-                <th>Amount</th>
-                <th>Qty</th>
-                <th>Taxable</th>
-                <th>Cycle</th>
-                <th>Refundable</th>
-                <th>Status</th>
-                <th>#</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+    {{-- ================= BILLING + INSTALLATION ADDRESS ================= --}}
+    @include('partials.subscriber-address', ['value' => $get])
 
     {{-- ========================= NETWORK INFORMATION ========================= --}}
     <div class="panel">
@@ -277,161 +247,5 @@
       if (!bid) { alert('Please select branch.'); return; }
       window.open('about:blank#selip-branch-' + bid, 'selip', 'width=600,height=500');
     }
-  </script>
-
-  <script>
-    // ── Billing Items (refundable | one-time | recurring) ──────────────
-    let biCount = 0;
-    const biTbody = document.querySelector('#billing-items-table tbody');
-    const biTotalEl = document.getElementById('billing-items-total');
-    const PRODUCT_AUTOCOMPLETE_URL = "{{ route('products.autocomplete') }}";
-
-    // Cache products so we can autofill the rest of the row on pick.
-    // Load all products immediately on page load.
-    let productCache = (async () => {
-      try {
-        const res = await fetch(PRODUCT_AUTOCOMPLETE_URL, {
-          headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-        });
-        if (res.ok) return await res.json();
-      } catch (e) {}
-      return [];
-    })();
-
-    async function biLoadProducts(q = '') {
-      // If query is empty, return the preloaded cache
-      if (!q) return await productCache;
-      try {
-        const url = new URL(PRODUCT_AUTOCOMPLETE_URL, window.location.origin);
-        url.searchParams.set('q', q);
-        const res = await fetch(url.toString(), {
-          headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-        });
-        if (!res.ok) return [];
-        return await res.json();
-      } catch (e) {
-        return [];
-      }
-    }
-    }
-
-    function biRecalcTotal() {
-      let total = 0;
-      biTbody.querySelectorAll('tr').forEach(tr => {
-        const amt = parseFloat(tr.querySelector('[data-bi="amount"]')?.value) || 0;
-        const qty = parseInt(tr.querySelector('[data-bi="qty"]')?.value) || 1;
-        total += amt * qty;
-      });
-      if (biTotalEl) biTotalEl.textContent = 'Total: ' + total.toFixed(2);
-    }
-
-    function biApplyProduct(row, product) {
-      const labelInput = row.querySelector('[data-bi="label"]');
-      if (labelInput) labelInput.value = product.name;
-      const descInput = row.querySelector('[data-bi="description"]');
-      if (descInput && product.description) descInput.value = product.description;
-      const amountInput = row.querySelector('[data-bi="amount"]');
-      if (amountInput && product.default_amount !== undefined) amountInput.value = product.default_amount;
-      const typeSelect = row.querySelector('[data-bi="type"]');
-      if (typeSelect && product.category) {
-        const map = { 'one-time': 'one-time', 'recurring': 'recurring' };
-        typeSelect.value = map[product.category] || 'one-time';
-      }
-      const productIdInput = row.querySelector('[data-bi="product_id"]');
-      if (productIdInput) productIdInput.value = product.id;
-      biRecalcTotal();
-    }
-
-    function biAddRow(data = {}) {
-      const i = biCount++;
-      const typeOpt = (val) => data.type === val ? 'selected' : '';
-      const cycleOpt = (val) => data.billing_cycle === val ? 'selected' : '';
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td>
-          <div class="bi-product-picker" data-bi-row="${i}">
-            <div class="bi-picker-control">
-              <input type="text" name="billing_items[${i}][label]" data-bi="label"
-                     value="${data.label ?? ''}" class="gui-input"
-                     placeholder="Search product or type a custom label…"
-                     autocomplete="off" required>
-              <button type="button" class="bi-picker-toggle" title="Browse products" aria-label="Browse products">▾</button>
-            </div>
-            <input type="hidden" name="billing_items[${i}][product_id]" data-bi="product_id" value="${data.product_id ?? ''}">
-            <input type="hidden" name="billing_items[${i}][description]" data-bi="description" value="${(data.description ?? '').replace(/"/g,'&quot;')}">
-            <div class="bi-picker-popover" hidden>
-              <div class="bi-picker-search">
-                <input type="text" class="gui-input bi-picker-search-input" placeholder="Type to filter products…">
-              </div>
-              <ul class="bi-picker-list" role="listbox"></ul>
-              <div class="bi-picker-empty">No products. Create one under Products & Services.</div>
-            </div>
-          </div>
-        </td>
-        <td>
-          <select name="billing_items[${i}][type]" data-bi="type" class="gui-input">
-            <option value="one-time"   ${typeOpt('one-time')}>one-time</option>
-            <option value="recurring"  ${typeOpt('recurring')}>recurring</option>
-            <option value="refundable" ${typeOpt('refundable')}>refundable</option>
-          </select>
-        </td>
-        <td><input type="number" step="0.01" min="0" name="billing_items[${i}][amount]" data-bi="amount" value="${data.amount ?? ''}" class="gui-input" style="width:100px;" placeholder="0.00"></td>
-        <td><input type="number" min="1" name="billing_items[${i}][qty]" data-bi="qty" value="${data.qty ?? 1}" class="gui-input" style="width:60px;" placeholder=" "></td>
-        <td>
-          <select name="billing_items[${i}][taxable]" data-bi="taxable" class="gui-input" style="width:80px;">
-            <option value="1" ${data.taxable !== '0' ? 'selected' : ''}>Yes</option>
-            <option value="0" ${data.taxable === '0' ? 'selected' : ''}>No</option>
-          </select>
-        </td>
-        <td>
-          <select name="billing_items[${i}][billing_cycle]" data-bi="billing_cycle" class="gui-input" style="width:110px;">
-            <option value="">—</option>
-            <option value="monthly"   ${cycleOpt('monthly')}>Monthly</option>
-            <option value="quarterly" ${cycleOpt('quarterly')}>Quarterly</option>
-            <option value="yearly"    ${cycleOpt('yearly')}>Yearly</option>
-          </select>
-        </td>
-        <td>
-          <select name="billing_items[${i}][is_refundable]" data-bi="is_refundable" class="gui-input" style="width:90px;">
-            <option value="0" ${data.is_refundable !== '1' ? 'selected' : ''}>No</option>
-            <option value="1" ${data.is_refundable === '1' ? 'selected' : ''}>Yes</option>
-          </select>
-        </td>
-        <td>
-          <select name="billing_items[${i}][status]" data-bi="status" class="gui-input" style="width:90px;">
-            <option value="active"   ${data.status !== 'inactive' ? 'selected' : ''}>Active</option>
-            <option value="inactive" ${data.status === 'inactive' ? 'selected' : ''}>Inactive</option>
-          </select>
-        </td>
-        <td><button type="button" class="btn btn-danger btn-sm remove-bi">X</button></td>
-      `;
-      biTbody.appendChild(row);
-      biRecalcTotal();
-      biWirePicker(row);
-    }
-
-    // Simple datalist autocomplete
-    // (handled inline in biAddRow above)
-
-    document.getElementById('add-billing-item').addEventListener('click', () => {
-      if (biCount >= 50) return;
-      biAddRow();
-    });
-
-    biTbody.addEventListener('input', e => biRecalcTotal());
-
-    biTbody.addEventListener('click', e => {
-      if (e.target.classList.contains('remove-bi')) {
-        e.target.closest('tr').remove();
-        biRecalcTotal();
-      }
-    });
-
-    // Pre-populate existing billing items from subscriber data
-    @if (!empty($billingRows))
-      @foreach ($billingRows as $row)
-        biAddRow(@json($row));
-      @endforeach
-    @endif
   </script>
 @endsection

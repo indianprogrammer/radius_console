@@ -42,6 +42,9 @@ class BillingTest extends TestCase
         // Pivot rows carry tenant_id (RLS isolation), so stamp it on attach.
         $plan->taxes()->attach($tax->id, ['tenant_id' => $this->tenant->id]);
 
+        // Invoices are derived from the subscriber's PLAN (the per-subscriber
+        // `billing_items` repeater was removed), so the plan price + its tax
+        // pivot are the only inputs the figures below depend on.
         $this->subscriber = Subscriber::create([
             'tenant_id'       => $this->tenant->id,
             'username'        => 'billinguser',
@@ -49,12 +52,16 @@ class BillingTest extends TestCase
             'password_enc'    => 'enc',
             'plan_id'         => $plan->id,
             'status'          => 'active',
-            'billing_items'   => [
-                ['label' => 'Installation', 'type' => 'one-time', 'amount' => 1000, 'qty' => 1, 'taxable' => true],
-                ['label' => 'Deposit', 'type' => 'refundable', 'amount' => 500, 'qty' => 1, 'taxable' => false, 'is_refundable' => true],
-            ],
         ]);
     }
+
+    /**
+     * Plan 599 @18% GST: subtotal 599, tax 107.82, precise amount 706.82,
+     * persisted `total` 707 (Settings > Billing rounds the payable up).
+     */
+    private const SUBTOTAL = 599.0;
+    private const TAX      = 107.82;
+    private const PAYABLE  = 707.0;
 
     private function url(string $path): string
     {
@@ -62,15 +69,17 @@ class BillingTest extends TestCase
         return 'http://' . $this->tenant->domain . '/' . ltrim($path, '/');
     }
 
-    public function test_invoice_is_generated_from_subscriber_billing_items_with_plan_tax(): void
+    public function test_invoice_is_generated_from_the_subscriber_plan_with_plan_tax(): void
     {
         $invoice = app(InvoiceService::class)->generateFromSubscriber($this->subscriber);
 
-        $this->assertSame(2, $invoice->items()->count());
-        // 1000 taxable @18% = 180 tax; 500 deposit is not taxable.
-        $this->assertSame(1500.0, $invoice->subtotal);
-        $this->assertSame(180.0, $invoice->tax_amount);
-        $this->assertSame(1680.0, $invoice->total);
+        // One line item: the plan itself.
+        $this->assertSame(1, $invoice->items()->count());
+        $this->assertSame('Home 50', $invoice->items()->first()->label);
+
+        $this->assertSame(self::SUBTOTAL, $invoice->subtotal);
+        $this->assertSame(self::TAX, $invoice->tax_amount);
+        $this->assertSame(self::PAYABLE, $invoice->total);
     }
 
     public function test_recording_a_payment_moves_the_invoice_to_partial_then_paid(): void
@@ -87,11 +96,11 @@ class BillingTest extends TestCase
         $invoice->refresh();
         $this->assertSame('partial', $invoice->status);
         $this->assertSame(680.0, $invoice->paid_amount);
-        $this->assertSame(1000.0, $invoice->balance());
+        $this->assertSame(round(self::PAYABLE - 680, 2), $invoice->balance());
 
         $this->post($this->url('/payments'), [
             'invoice_id' => $invoice->id,
-            'amount'     => 1000,
+            'amount'     => self::PAYABLE - 680,
             'method'     => 'cash',
         ])->assertRedirect();
 
@@ -106,7 +115,7 @@ class BillingTest extends TestCase
 
         $this->post($this->url('/payments'), [
             'invoice_id' => $invoice->id,
-            'amount'     => 1680,
+            'amount'     => self::PAYABLE,
             'method'     => 'cheque',
             'status'     => 'pending',
         ])->assertRedirect();
@@ -122,7 +131,7 @@ class BillingTest extends TestCase
 
         $this->post($this->url('/payments'), [
             'invoice_id' => $invoice->id,
-            'amount'     => 1680,
+            'amount'     => self::PAYABLE,
             'method'     => 'cash',
         ])->assertRedirect();
 
@@ -170,9 +179,9 @@ class BillingTest extends TestCase
 
         $this->get($this->url('/ledger'))
             ->assertOk()
-            ->assertViewHas('summary', fn (array $s) => $s['debit'] === 1680.0
+            ->assertViewHas('summary', fn (array $s) => $s['debit'] === self::PAYABLE
                 && $s['credit'] === 680.0
-                && $s['closing'] === 1000.0);
+                && $s['closing'] === round(self::PAYABLE - 680, 2));
     }
 
     public function test_invoices_are_scoped_to_the_current_tenant(): void
