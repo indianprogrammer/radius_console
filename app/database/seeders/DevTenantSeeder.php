@@ -18,7 +18,7 @@ final class DevTenantSeeder extends Seeder
         foreach ($hosts as $i => $host) {
             Tenant::updateOrCreate(
                 ['domain' => $host],
-                ['name' => 'Dev ISP ' . ($i + 1), 'slug' => 'devisp' . ($i + 1), 'theme_default' => 'light', 'status' => 'active']
+                ['name' => 'Radius Console ' . ($i + 1), 'slug' => 'devisp' . ($i + 1), 'theme_default' => 'light', 'status' => 'active']
             );
         }
 
