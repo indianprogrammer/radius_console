@@ -4,7 +4,6 @@
   $groups = [
     '' => [ // ungrouped / top-level
       ['label' => 'Dashboard', 'route' => 'dashboard', 'ready' => true],
-      ['label' => 'Wallets / Credit', 'route' => '#', 'ready' => false],
       ['label' => 'Live Sessions', 'route' => '#', 'ready' => false],
       ['label' => 'Disconnect / Bandwidth', 'route' => '#', 'ready' => false],
       ['label' => 'Notifications', 'route' => '#', 'ready' => false],
@@ -18,6 +17,7 @@
       ['label' => 'KYC / Verification', 'route' => '#', 'ready' => false],
     ],
     'Billing & Invoices' => [
+      ['label' => 'Wallets / Credit', 'route' => '#', 'ready' => false],
       ['label' => 'Quotations', 'route' => 'quotes.index', 'params' => 'quotation', 'ready' => true],
       ['label' => 'Proforma Invoices', 'route' => 'quotes.index', 'params' => 'proforma', 'ready' => true],
       ['label' => 'Invoices', 'route' => 'invoices.index', 'ready' => true],
