@@ -163,9 +163,13 @@ Route::prefix('ledger')->name('ledger.')->group(function () {
 // Logs (SRD §5.0 #10). Every page is `audit_log` filtered by `{channel}`, so
 // one route serves all nine menu entries. GET only — the trail is append-only
 // (SRD §9.8) and `App\Services\ActivityLogger` is its sole writer.
+// `radius` and `live-sessions` are read-through proxies over the external
+// RADIUS API and MUST be declared before `/{channel}`, which would otherwise
+// swallow them as channel names and 404.
 Route::prefix('logs')->name('logs.')->group(function () {
     Route::get('/', [LogController::class, 'index'])->name('index');
     Route::get('/radius', [LogController::class, 'radius'])->name('radius');
+    Route::get('/live-sessions', [LogController::class, 'liveSessions'])->name('live-sessions');
     Route::get('/{channel}', [LogController::class, 'channel'])->name('channel');
 });
 

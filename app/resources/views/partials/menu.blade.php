@@ -62,8 +62,9 @@
       ['label' => 'User Syslogs', 'route' => 'logs.channel', 'params' => 'syslog', 'ready' => true],
       // Live sessions also live under Logs (SRD §5.0) — not stored locally
       // like the channels above, but a related audit-feed concept and
-      // grouped with them in the menu for one-stop visibility.
-      ['label' => 'Live Sessions', 'route' => '#', 'ready' => false],
+      // grouped with them in the menu for one-stop visibility. Data comes
+      // from the RADIUS server's session API (SRD §5.3).
+      ['label' => 'Live Sessions', 'route' => 'logs.live-sessions', 'ready' => true],
     ],
     'Radius Control' => [
       ['label' => 'Bandwidth Control', 'route' => 'bandwidth-profiles.index', 'ready' => true],

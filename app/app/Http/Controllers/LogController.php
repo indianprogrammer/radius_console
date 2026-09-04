@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
+use App\Services\LiveSessionCollector;
 use App\Src\Ports\RadiusClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 /**
  * Logs — the "Logs" menu group (SRD §5.0 #10, §9.8).
@@ -92,6 +94,122 @@ final class LogController extends Controller
             'totals'    => $totals,
             'perPage'   => $perPage,
         ]);
+    }
+
+    /**
+     * Live Sessions — who is online right now, collected from the RADIUS
+     * server's session API (SRD §5.3 "Live session grid (GET /api/sessions):
+     * user, NAS, IP, uptime, bytes").
+     *
+     * Read-through like Auth Logs above: nothing is persisted, because the
+     * RADIUS server is the network truth for session state and a local copy
+     * could only be stale. Collection, tenant scoping and the merge with open
+     * accounting records live in `LiveSessionCollector`; this method is filter,
+     * sort and paginate over the result.
+     */
+    public function liveSessions(Request $request, LiveSessionCollector $collector)
+    {
+        $perPage = max(1, min(100, (int) $request->query('per_page', 25)));
+        $page    = max(1, (int) $request->query('page', 1));
+
+        $tenant = view()->shared('tenant');
+
+        $result = $collector->collect($tenant->slug ?? 'tenant', tenant_id());
+
+        $sessions = $this->filterSessions(
+            $result['sessions'],
+            $search = $request->query('q'),
+            $nasIp  = $request->query('nas'),
+            $health = $request->query('health'),
+        );
+
+        $sessions = $this->sortSessions($sessions, $sort = (string) $request->query('sort', 'recent'));
+
+        $paginated = new LengthAwarePaginator(
+            $sessions->forPage($page, $perPage)->values()->all(),
+            $sessions->count(),
+            $perPage,
+            $page,
+            ['path' => route('logs.live-sessions'), 'query' => $request->query()],
+        );
+
+        return view('logs.live-sessions', [
+            'sessions' => $paginated,
+            // Cards summarise the whole tenant, so they keep reporting the true
+            // picture while a filter narrows the table.
+            'totals'   => $result['totals'],
+            'matched'  => $sessions->count(),
+            'foreign'  => $result['foreign'],
+            'error'    => $result['error'],
+            'nasOptions' => $result['sessions']->pluck('nas_name', 'nas_ip')
+                ->filter(fn ($name, $ip) => (string) $ip !== '')
+                ->map(fn ($name, $ip) => $name ? "$name ($ip)" : $ip)
+                ->sort()
+                ->all(),
+            'search'  => $search,
+            'nasIp'   => $nasIp,
+            'health'  => $health,
+            'sort'    => $sort,
+            'perPage' => $perPage,
+        ]);
+    }
+
+    /**
+     * Free-text + facet filters over the collected sessions.
+     *
+     * Filtering happens in PHP rather than by re-querying the RADIUS API
+     * because the API takes no filter arguments — `GET /api/sessions` returns
+     * everything, and one round trip is cheaper than a request per keystroke.
+     *
+     * @param  Collection<int, array<string, mixed>> $sessions
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function filterSessions(Collection $sessions, ?string $search, ?string $nasIp, ?string $health): Collection
+    {
+        if (($term = trim((string) $search)) !== '') {
+            $needle = mb_strtolower($term);
+            $sessions = $sessions->filter(function (array $s) use ($needle): bool {
+                foreach (['local_username', 'username', 'subscriber_name', 'framed_ip',
+                          'framed_ipv6', 'mac_address', 'nas_ip', 'nas_name',
+                          'nas_identifier', 'session_id', 'plan_name'] as $key) {
+                    if ($s[$key] !== null && str_contains(mb_strtolower((string) $s[$key]), $needle)) {
+                        return true;
+                    }
+                }
+
+                return false;
+            });
+        }
+
+        if (($nasIp = trim((string) $nasIp)) !== '') {
+            $sessions = $sessions->where('nas_ip', $nasIp);
+        }
+
+        if (($health = trim((string) $health)) !== '') {
+            // "stale" on the filter bar means "not currently healthy", which is
+            // what an operator is looking for; idle and stale read as one group.
+            $sessions = $health === 'stale'
+                ? $sessions->whereIn('health', ['idle', 'stale'])
+                : $sessions->where('health', $health);
+        }
+
+        return $sessions->values();
+    }
+
+    /**
+     * @param  Collection<int, array<string, mixed>> $sessions
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function sortSessions(Collection $sessions, string $sort): Collection
+    {
+        return match ($sort) {
+            'longest'  => $sessions->sortByDesc(fn (array $s) => $s['duration'] ?? 0)->values(),
+            'volume'   => $sessions->sortByDesc('total_octets')->values(),
+            'username' => $sessions->sortBy(fn (array $s) => mb_strtolower((string) $s['local_username']))->values(),
+            // `recent` is the collector's own order; anything unrecognised
+            // falls back to it rather than erroring on a hand-edited URL.
+            default    => $sessions,
+        };
     }
 
     public function channel(Request $request, string $channel)
