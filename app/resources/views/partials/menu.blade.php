@@ -4,7 +4,6 @@
   $groups = [
     '' => [ // ungrouped / top-level
       ['label' => 'Dashboard', 'route' => 'dashboard', 'ready' => true],
-      ['label' => 'Live Sessions', 'route' => '#', 'ready' => false],
       ['label' => 'Disconnect / Bandwidth', 'route' => '#', 'ready' => false],
       ['label' => 'Notifications', 'route' => '#', 'ready' => false],
       ['label' => 'Reports', 'route' => '#', 'ready' => false],
@@ -67,6 +66,10 @@
       ['label' => 'WhatsApp Logs', 'route' => 'logs.channel', 'params' => 'whatsapp', 'ready' => true],
       ['label' => 'Aadhaar Logs', 'route' => 'logs.channel', 'params' => 'aadhaar', 'ready' => true],
       ['label' => 'User Syslogs', 'route' => 'logs.channel', 'params' => 'syslog', 'ready' => true],
+      // Live sessions also live under Logs (SRD §5.0) — not stored locally
+      // like the channels above, but a related audit-feed concept and
+      // grouped with them in the menu for one-stop visibility.
+      ['label' => 'Live Sessions', 'route' => '#', 'ready' => false],
     ],
     'Radius Control' => [
       ['label' => 'Bandwidth Control', 'route' => 'bandwidth-profiles.index', 'ready' => true],
