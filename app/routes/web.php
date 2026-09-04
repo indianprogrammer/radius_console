@@ -165,6 +165,7 @@ Route::prefix('ledger')->name('ledger.')->group(function () {
 // (SRD §9.8) and `App\Services\ActivityLogger` is its sole writer.
 Route::prefix('logs')->name('logs.')->group(function () {
     Route::get('/', [LogController::class, 'index'])->name('index');
+    Route::get('/radius', [LogController::class, 'radius'])->name('radius');
     Route::get('/{channel}', [LogController::class, 'channel'])->name('channel');
 });
 

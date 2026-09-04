@@ -7,8 +7,6 @@
       ['label' => 'Wallets / Credit', 'route' => '#', 'ready' => false],
       ['label' => 'Live Sessions', 'route' => '#', 'ready' => false],
       ['label' => 'Disconnect / Bandwidth', 'route' => '#', 'ready' => false],
-      ['label' => 'Auth Logs', 'route' => '#', 'ready' => false],
-      ['label' => 'KYC / Verification', 'route' => '#', 'ready' => false],
       ['label' => 'Notifications', 'route' => '#', 'ready' => false],
       ['label' => 'Reports', 'route' => '#', 'ready' => false],
       ['label' => 'IPDR / Compliance', 'route' => '#', 'ready' => false, 'note' => 'Pending IPDR Server (#7) — IpdrClient adapter'],
@@ -17,6 +15,7 @@
     ],
     'Subscriber Control' => [
       ['label' => 'Subscribers', 'route' => 'subscribers.index', 'ready' => true],
+      ['label' => 'KYC / Verification', 'route' => '#', 'ready' => false],
     ],
     'Billing & Invoices' => [
       ['label' => 'Quotations', 'route' => 'quotes.index', 'params' => 'quotation', 'ready' => true],
@@ -55,7 +54,11 @@
       // different channel, because all nine pages are `audit_log` filtered by
       // `channel` — see App\Models\ActivityLog::CHANNELS, which this list
       // mirrors. `params` is what distinguishes the active one (see $renderItem).
+      // 'Auth Logs' is the exception — its data lives on the EXTERNAL RADIUS
+      // server (SRD §5.0: "data should be fetched from radius server API"), so
+      // it points at the dedicated `logs.radius` proxy endpoint instead.
       ['label' => 'Audit Logs', 'route' => 'logs.channel', 'params' => 'audit', 'ready' => true],
+      ['label' => 'Auth Logs', 'route' => 'logs.radius', 'ready' => true],
       ['label' => 'Login History', 'route' => 'logs.channel', 'params' => 'login', 'ready' => true],
       ['label' => 'Login Fail Attempts', 'route' => 'logs.channel', 'params' => 'login_fail', 'ready' => true],
       ['label' => 'SMS Logs', 'route' => 'logs.channel', 'params' => 'sms', 'ready' => true],

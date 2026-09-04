@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
+use App\Src\Ports\RadiusClient;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
  * Logs — the "Logs" menu group (SRD §5.0 #10, §9.8).
@@ -23,6 +26,72 @@ final class LogController extends Controller
     public function index()
     {
         return redirect()->route('logs.channel', 'audit');
+    }
+
+    /**
+     * RADIUS Auth Logs — fetched live from the external RADIUS management server.
+     * Not stored locally; this is a read-through proxy that pulls from
+     * RadiusClient::listAuthLogs() and paginates the result.
+     *
+     * SRD §5.0: "Auth Logs should be inside logs menu, data fetched from
+     * radius server API."
+     */
+    public function radius(Request $request, RadiusClient $radius)
+    {
+        $perPage = max(1, min(100, (int) $request->query('per_page', 25)));
+        $page    = max(1, (int) $request->query('page', 1));
+
+        try {
+            // Fetch a generous window so we can paginate server-side.
+            // The RADIUS server's own limit caps at 200.  The API returns a wrapper
+            // object {count, logs[]} so we unwrap the logs key.
+            $response = $radius->listAuthLogs(min(500, $perPage * 3));
+            $raw = $response['logs'] ?? ($response ?: []);
+        } catch (\Throwable $e) {
+            // RADIUS server is unreachable or returned a hard error.
+            // Show an empty state with a clear message rather than crashing.
+            $raw = [];
+        }
+
+        // Normalise each record to the same shape as ActivityLog rows so the
+        // view can render it with a compatible column set.
+        $rows = collect($raw)->map(fn (array $r): array => [
+            'id'          => $r['id'] ?? null,
+            'username'    => $r['username'] ?? $r['user'] ?? null,
+            'ip_address'  => $r['ip_address'] ?? $r['nas_ip_address'] ?? $r['client_ip'] ?? null,
+            'mac_address' => $r['mac_address'] ?? $r['calling_station_id'] ?? null,
+            'nas'         => $r['nas'] ?? $r['nas_identifier'] ?? null,
+            'reply'       => $r['reply'] ?? $r['reply_message'] ?? null, // Access-Accept / Access-Reject
+            'status'      => str_contains(($r['reply'] ?? ''), 'Accept') ? 'success' : 'failed',
+            'action'      => str_contains(($r['reply'] ?? ''), 'Accept') ? 'accepted' : 'rejected',
+            'timestamp'   => $r['timestamp'] ?? $r['auth_time'] ?? $r['created_at'] ?? null,
+            'raw'         => $r,
+        ]);
+
+        $paginated = new LengthAwarePaginator(
+            $rows->forPage($page, $perPage)->values()->all(),
+            $rows->count(),
+            $perPage,
+            $page,
+            ['path' => route('logs.radius')]
+        );
+
+        // Summary cards
+        $totals = [
+            'total'  => $rows->count(),
+            'failed' => $rows->where('status', 'failed')->count(),
+            'today'  => $rows->filter(fn ($r) => $r['timestamp']
+                && \Illuminate\Support\Carbon::parse($r['timestamp'])->isToday())->count(),
+            'week'   => $rows->filter(fn ($r) => $r['timestamp']
+                && \Illuminate\Support\Carbon::parse($r['timestamp'])->gte(now()->subDays(7)))->count(),
+            'last'   => $rows->max('timestamp'),
+        ];
+
+        return view('logs.radius', [
+            'logs'      => $paginated,
+            'totals'    => $totals,
+            'perPage'   => $perPage,
+        ]);
     }
 
     public function channel(Request $request, string $channel)
