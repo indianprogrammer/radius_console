@@ -4,12 +4,6 @@
   $groups = [
     '' => [ // ungrouped / top-level
       ['label' => 'Dashboard', 'route' => 'dashboard', 'ready' => true],
-      ['label' => 'Disconnect / Bandwidth', 'route' => '#', 'ready' => false],
-      ['label' => 'Notifications', 'route' => '#', 'ready' => false],
-      ['label' => 'Reports', 'route' => '#', 'ready' => false],
-      ['label' => 'IPDR / Compliance', 'route' => '#', 'ready' => false, 'note' => 'Pending IPDR Server (#7) — IpdrClient adapter'],
-      ['label' => 'Cron / Automation', 'route' => '#', 'ready' => false],
-      // "Audit Log" now lives in the Logs group below (logs.channel/audit).
     ],
     'Subscriber Control' => [
       ['label' => 'Subscribers', 'route' => 'subscribers.index', 'ready' => true],
